@@ -49,6 +49,17 @@ function Format.percent(value: number, decimals: number?): string
 	return string.format("%." .. tostring(decimals or 0) .. "f%%", value * 100)
 end
 
+-- Arayüzdeki etiketlerde RichText açık: oyuncu adı gibi dışarıdan gelen
+-- metinler etiket olarak yorumlanabilir. Roblox ad kuralları < karakterine
+-- izin vermiyor ama duyuru metinleri kod değişikliğiyle başka kaynaklardan
+-- da beslenebilir; kaçırmak ucuz, unutmak pahalı.
+function Format.escapeRichText(text: string): string
+	local escaped = text:gsub("&", "&amp;")
+	escaped = escaped:gsub("<", "&lt;")
+	escaped = escaped:gsub(">", "&gt;")
+	return escaped
+end
+
 -- 0.0002 gibi şansları "1 / 5000" diye göstermek daha anlaşılır oluyor.
 function Format.odds(probability: number): string
 	if probability <= 0 then

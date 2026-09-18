@@ -364,7 +364,7 @@ function VaultService.notifyRobbed(targetUserId: number, thiefName: string, coin
 	})
 	NotificationService.toast(
 		player,
-		`{thiefName} kasandan {Format.short(coins)} coin çaldı!`,
+		`{Format.escapeRichText(thiefName)} kasandan {Format.short(coins)} coin çaldı!`,
 		"bad"
 	)
 end

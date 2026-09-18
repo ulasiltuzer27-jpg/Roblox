@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Economy = require(ReplicatedStorage.Shared.Core.Economy)
+local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local Rng = require(ReplicatedStorage.Shared.Core.Rng)
 local Validate = require(ReplicatedStorage.Shared.Core.Validate)
@@ -130,7 +131,7 @@ function CrateService.open(player: Player, payload: any): (boolean, any)
 
 		if Loot.shouldAnnounce(treasure) then
 			NotificationService.announce(
-				`🎉 {player.DisplayName} {Loot.displayName(treasure)} buldu!`,
+				`🎉 {Format.escapeRichText(player.DisplayName)} {Loot.displayName(treasure)} buldu!`,
 				Config.Mutations.get(treasure.mutation).color,
 				true
 			)

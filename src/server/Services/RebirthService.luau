@@ -46,7 +46,8 @@ function RebirthService.perform(player: Player): (boolean, any)
 	VaultService.Changed:fire(player.UserId)
 
 	NotificationService.announce(
-		`♻️ {player.DisplayName} {profile.rebirths}. rebirth'ünü yaptı! (x{Config.Rebirth.multiplier(profile.rebirths)} gelir)`,
+		`♻️ {Format.escapeRichText(player.DisplayName)} {profile.rebirths}. rebirth'ünü yaptı! `
+			.. `(x{Config.Rebirth.multiplier(profile.rebirths)} gelir)`,
 		{ 255, 200, 64 }
 	)
 	return true, { rebirths = profile.rebirths, tokens = tokens }

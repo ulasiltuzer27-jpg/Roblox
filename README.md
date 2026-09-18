@@ -44,7 +44,7 @@ açık olmalı; kapalıysa oyun yine çalışır ama kayıt bellek içinde tutul
 
 | Komut | Ne yapar |
 |---|---|
-| `./scripts/test.sh` | Oyun matematiğinin testlerini koşar (141 test, Roblox gerekmez) |
+| `./scripts/test.sh` | Oyun matematiğinin testlerini koşar (142 test + model geometrisi, Roblox gerekmez) |
 | `./scripts/check.sh` | Bütün `.luau` dosyalarını derleyerek sözdizimini doğrular |
 | `./scripts/balance.sh` | Denge raporu: sandık geri ödeme süreleri, rebirth eşikleri, maliyet tabloları |
 | `./scripts/sim.sh` | Ekonomi simülasyonu: dört oyuncu arketipi, Monte Carlo, ölçüt uyarıları + grafikler |
@@ -82,7 +82,8 @@ Tam liste: [docs/YAYIN.md](docs/YAYIN.md)
 
 - [docs/TASARIM.md](docs/TASARIM.md) — oynanış kararları ve neden öyle
 - [docs/EKONOMI.md](docs/EKONOMI.md) — ekonomi, ilerleme eğrisi, denge ayarı
-- [docs/MIMARI.md](docs/MIMARI.md) — kod mimarisi, veri akışı, güvenlik modeli
+- [docs/MIMARI.md](docs/MIMARI.md) — kod mimarisi ve veri akışı
+- [docs/GUVENLIK.md](docs/GUVENLIK.md) — otorite modeli, doğrulama, kayıt sağlamlığı, exploit yüzeyi
 - [docs/YAYIN.md](docs/YAYIN.md) — yayın kontrol listesi ve 1000 oyuncu meselesi
 - [docs/STUDIO_TEST.md](docs/STUDIO_TEST.md) — Studio'da elle test listesi
 - [docs/PAZARLAMA.md](docs/PAZARLAMA.md) — ikon/thumbnail brief'i, açıklama, video metinleri, creator mesajı

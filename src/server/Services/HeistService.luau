@@ -236,7 +236,9 @@ local function finish(session, success: boolean, reason: string)
 
 			if perfect and coins > 0 then
 				NotificationService.announce(
-					`🕶️ {player.DisplayName}, {session.targetName} kasasını alarm çaldırmadan soydu: {Format.short(coins)} coin!`,
+					`🕶️ {Format.escapeRichText(player.DisplayName)}, `
+						.. `{Format.escapeRichText(session.targetName)} kasasını alarm çaldırmadan soydu: `
+						.. `{Format.short(coins)} coin!`,
 					{ 0, 255, 214 }
 				)
 			end
@@ -454,7 +456,11 @@ function HeistService.start(player: Player, payload: any): (boolean, any)
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer then
-		NotificationService.toast(targetPlayer, `{player.DisplayName} kasana giriyor!`, "warn")
+		NotificationService.toast(
+			targetPlayer,
+			`{Format.escapeRichText(player.DisplayName)} kasana giriyor!`,
+			"warn"
+		)
 	end
 
 	return true, { started = true }

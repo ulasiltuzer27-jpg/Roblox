@@ -37,6 +37,16 @@ describe("Format", function()
 		expect.equal(Format.time(3671), "1:01:11")
 	end)
 
+	it("RichText etiketlerini kaçırır", function()
+		-- Arayüzde RichText açık; dışarıdan gelen metin etiket olamamalı.
+		expect.equal(Format.escapeRichText("<b>kalın</b>"), "&lt;b&gt;kalın&lt;/b&gt;")
+		expect.equal(Format.escapeRichText('<font color="#f00">x</font>'), '&lt;font color="#f00"&gt;x&lt;/font&gt;')
+		expect.equal(Format.escapeRichText("A & B"), "A &amp; B")
+		expect.equal(Format.escapeRichText("normal isim"), "normal isim")
+		-- & önce kaçırılmalı, yoksa &lt; tekrar kaçırılır
+		expect.equal(Format.escapeRichText("&lt;"), "&amp;lt;")
+	end)
+
 	it("küçük ihtimalleri '1 / N' diye gösterir", function()
 		expect.equal(Format.odds(0.0002), "1 / 5K")
 		expect.equal(Format.odds(0.5), "50.00%")
