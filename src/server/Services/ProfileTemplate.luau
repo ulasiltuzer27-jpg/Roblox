@@ -4,10 +4,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 
 local ProfileTemplate = {}
 
 ProfileTemplate.Version = 1
+
+-- Saklanan makbuz sayısı tavanı: kayıt boyutu sınırsız büyümesin.
+ProfileTemplate.MaxReceipts = 50
 
 function ProfileTemplate.create(now: number)
 	local crates = {}
@@ -58,13 +62,53 @@ function ProfileTemplate.create(now: number)
 	}
 end
 
-local function fillMissing(target, template)
+-- Eksik alanı doldurur, tipi tutmayan alanı şablon değeriyle değiştirir.
+-- Tip kontrolü şart: bozuk ya da elle kurcalanmış bir kayıtta `coins` bir
+-- tablo olarak gelirse aritmetik hata verip oyuncuyu tamamen kilitler.
+local function fillMissing(target, template, path: string)
 	for key, value in template do
-		if target[key] == nil then
+		local current = target[key]
+		if current == nil then
 			target[key] = if type(value) == "table" then table.clone(value) else value
-		elseif type(value) == "table" and type(target[key]) == "table" then
-			fillMissing(target[key], value)
+		elseif type(current) ~= type(value) then
+			warn(`[ProfileTemplate] {path}{key}: beklenen {type(value)}, gelen {type(current)} -- sıfırlandı`)
+			target[key] = if type(value) == "table" then table.clone(value) else value
+		elseif type(value) == "table" then
+			fillMissing(current, value, `{path}{key}.`)
 		end
+	end
+end
+
+-- Kayda yazılmış sayıların akla uygunluğu: NaN, sonsuz ve negatif para
+-- oyunu sessizce çökertir. (Bir istemci doğrulama açığı kapanana kadar
+-- bunları yazabiliyordu; kayıtlar hâlâ taşıyor olabilir.)
+local NUMERIC_FIELDS = {
+	coins = 0,
+	tokens = 0,
+	rebirths = 0,
+	stash = 0,
+	lastIncomeAt = 0,
+	lastSeenAt = 0,
+	shieldUntil = 0,
+	jailUntil = 0,
+	lastRobbedAt = 0,
+	uidCounter = 0,
+}
+
+local function sanitizeNumbers(profile, now: number)
+	for field, minimum in NUMERIC_FIELDS do
+		profile[field] = Validate.sanitizeNumber(profile[field], minimum, minimum)
+	end
+	-- Zaman damgaları gelecekten gelemez (saat oynanmış ya da bozuk kayıt).
+	profile.lastSeenAt = math.min(profile.lastSeenAt, now)
+	profile.lastIncomeAt = math.min(profile.lastIncomeAt, now)
+
+	for key, value in profile.stats do
+		profile.stats[key] = Validate.sanitizeNumber(value, 0, 0)
+	end
+	for crateId, amount in profile.crates do
+		local sanitized = Validate.integer(amount, 1, Config.Balance.Crates.maxQueued)
+		profile.crates[crateId] = sanitized -- geçersizse nil, yani düşer
 	end
 end
 
@@ -75,8 +119,42 @@ function ProfileTemplate.reconcile(profile, now: number)
 	template.crates = {}
 	template.coins = profile.coins or template.coins
 
-	fillMissing(profile, template)
+	fillMissing(profile, template, "")
+	sanitizeNumbers(profile, now)
 	profile.version = ProfileTemplate.Version
+
+	-- Tanımsız nadirlik/mutasyon taşıyan hazineler kaydı bozar: düşür.
+	for uid, treasure in profile.treasures do
+		if
+			type(treasure) ~= "table"
+			or not Config.Rarities.ById[treasure.rarity]
+			or not Config.Mutations.ById[treasure.mutation]
+		then
+			profile.treasures[uid] = nil
+		end
+	end
+
+	-- Makbuz listesi sınırsız büyürse kayıt boyutu şişer. En yenileri kalsın.
+	local receiptCount = 0
+	for _ in profile.receipts do
+		receiptCount += 1
+	end
+	if receiptCount > ProfileTemplate.MaxReceipts then
+		local ordered = {}
+		for id, at in profile.receipts do
+			table.insert(ordered, { id = id, at = if type(at) == "number" then at else 0 })
+		end
+		table.sort(ordered, function(a, b)
+			return a.at > b.at
+		end)
+		profile.receipts = {}
+		for index = 1, ProfileTemplate.MaxReceipts do
+			local entry = ordered[index]
+			if entry then
+				profile.receipts[entry.id] = entry.at
+			end
+		end
+	end
 
 	-- Kaydı her zaman tutarlı hale getir: yerleştirilmiş uid envanterde yoksa düş.
 	local cleanedPlaced = {}
