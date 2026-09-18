@@ -135,6 +135,23 @@ function Layout.generate(seed: number, options: GenerateOptions): Types.Layout
 	}
 end
 
+-- Kasa kapısındaki kilit zamanlaması. İşaretçi 0'dan 1'e süpürür,
+-- hedef bölge ortadadır. Sunucu ve istemci aynı fonksiyonu kullanır ki
+-- ekranda görülen ile kabul edilen atış aynı olsun.
+Layout.DoorPeriod = 1.8
+
+function Layout.doorMarker(elapsed: number): number
+	return (elapsed % Layout.DoorPeriod) / Layout.DoorPeriod
+end
+
+function Layout.doorHalfWidth(windowSeconds: number): number
+	return math.clamp(windowSeconds / Layout.DoorPeriod / 2, 0.05, 0.4)
+end
+
+function Layout.doorHit(elapsed: number, windowSeconds: number): boolean
+	return math.abs(Layout.doorMarker(elapsed) - 0.5) <= Layout.doorHalfWidth(windowSeconds)
+end
+
 -- Lazerin t anındaki konumu (koridor merkezine göre ofset).
 function Layout.laserOffset(laser: Types.LaserSpec, clock: number): number
 	return math.sin(clock * laser.speed + laser.phase) * (laser.span / 2)

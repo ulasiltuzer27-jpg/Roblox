@@ -10,6 +10,10 @@ Balance.Vault = {
 	onlineStashSeconds = 7200, -- çevrimiçiyken en fazla 2 saatlik birikim tutulur
 	autoCollectInterval = 10, -- "Otomatik Toplama" gamepass'i
 	minStashToRob = 500,
+	-- Oyuncu sunucudan çıktıktan sonra kasası bir süre daha soyulabilir kalır.
+	-- Aksi halde herkes "soyulmamak için çık" oynardı.
+	lingerSeconds = 600,
+	maxTargetsListed = 12,
 }
 
 Balance.Offline = {
@@ -94,6 +98,15 @@ Balance.Economy = {
 	-- İlk 60 saniye: yeni oyuncu bunları hazır bulur, ilk ödülünü 10 saniyede alır.
 	starterCrates = { wood = 3 },
 	sellRefundShare = 1, -- hazine satarken alınan oran (1 = tam değer)
+}
+
+Balance.Net = {
+	-- İstemciden gelen istekler için jeton kovası. Aşan istek sessizce düşer.
+	actionsPerSecond = 8,
+	actionBurst = 20,
+	inputsPerSecond = 30,
+	inputBurst = 45,
+	syncInterval = 0.4, -- profil değişikliklerinin istemciye yayın aralığı
 }
 
 Balance.Leaderboard = {

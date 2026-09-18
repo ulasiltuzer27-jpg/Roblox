@@ -105,6 +105,37 @@ describe("Layout", function()
 		expect.equal(layout.checkpoints[#layout.checkpoints], layout.length)
 	end)
 
+	it("kapı işaretçisi 0-1 arasında süpürür", function()
+		for step = 0, 100 do
+			expect.between(Layout.doorMarker(step * 0.07), 0, 1, "işaretçi")
+		end
+		expect.near(Layout.doorMarker(0), 0, 1e-9)
+		expect.near(Layout.doorMarker(Layout.DoorPeriod / 2), 0.5, 1e-9)
+	end)
+
+	it("kapı vuruşu yalnızca orta bölgede sayılır", function()
+		local window = 1.15
+		-- Süpürmenin tam ortası her zaman isabet.
+		expect.truthy(Layout.doorHit(Layout.DoorPeriod / 2, window))
+		-- Başı ve sonu her zaman ıska.
+		expect.falsy(Layout.doorHit(0, window))
+		expect.falsy(Layout.doorHit(Layout.DoorPeriod * 0.99, window))
+	end)
+
+	it("dar pencere isabet aralığını daraltır", function()
+		expect.less(Layout.doorHalfWidth(0.4), Layout.doorHalfWidth(1.15))
+		-- Tavan ve taban var: kapı ne imkansız ne de bedava olsun.
+		expect.between(Layout.doorHalfWidth(0.01), 0.05, 0.4)
+		expect.between(Layout.doorHalfWidth(99), 0.05, 0.4)
+	end)
+
+	it("kapı isabeti tur boyunca tekrar eder", function()
+		local window = 0.9
+		local center = Layout.DoorPeriod / 2
+		expect.truthy(Layout.doorHit(center, window))
+		expect.truthy(Layout.doorHit(center + Layout.DoorPeriod * 3, window), "üçüncü turda da")
+	end)
+
 	it("lazer salınımı menzilin dışına taşmaz", function()
 		local layout = Layout.generate(12, options({ defenses = { laser = 6 } }))
 		local laser = layout.lasers[1]
