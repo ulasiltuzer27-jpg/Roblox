@@ -227,7 +227,9 @@ function DataService.peek(userId: number)
 end
 
 local function onPlayerAdded(player: Player)
-	if loading[player.UserId] then
+	-- init() hem mevcut oyuncuları yükler hem PlayerAdded'e bağlanır;
+	-- tam o anda katılan oyuncu iki kez yüklenmesin.
+	if loading[player.UserId] or profiles[player.UserId] then
 		return
 	end
 	loading[player.UserId] = true

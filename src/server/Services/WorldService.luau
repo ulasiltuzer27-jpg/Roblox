@@ -14,8 +14,10 @@ local VaultService = require(ServerScriptService.Server.Services.VaultService)
 
 local WorldService = {}
 
-local PLOT_COUNT = 12
-local PLOT_RADIUS = 96
+-- Parsel sayısı, yerin "Max Players" ayarıyla uyumlu olmalı: parseli olmayan
+-- oyuncunun kasası görünmez (soygun yine çalışır ama kasayı göremezsin).
+local PLOT_COUNT = 24
+local PLOT_RADIUS = 140
 local PEDESTALS_PER_ROW = 9
 
 local plots: { [number]: any } = {} -- plotIndex -> { model, userId }
@@ -206,7 +208,7 @@ end
 
 local function assignPlot(player: Player)
 	for index, plot in plots do
-		if not plot.userId then
+		if not plot.userId then -- ilk boş parsel
 			plot.userId = player.UserId
 			byUser[player.UserId] = index
 			renderPlot(plot)
@@ -222,6 +224,7 @@ local function assignPlot(player: Player)
 			return
 		end
 	end
+	warn(`[WorldService] boş parsel kalmadı ({PLOT_COUNT} parsel); {player.Name} kasasız oynuyor`)
 end
 
 local function releasePlot(userId: number)

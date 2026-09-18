@@ -5,7 +5,7 @@ export type Zone = {
 	name: string,
 	requiredRebirths: number,
 	incomeBonus: number, -- bölgeye kasa taşıyan oyuncuya kalıcı gelir bonusu
-	origin: { number }, -- dünya koordinatı (x, y, z); WorldService plotları buradan dizer
+	origin: { number }, -- ileride bölgeler ayrı fiziksel alan olursa diye ayrıldı; şu an kullanılmıyor
 }
 
 local Zones = {}
