@@ -14,3 +14,7 @@ fi
 
 python3 "$ROOT/scripts/prepare_tests.py"
 "$LUAU" "$ROOT/build/test/run.luau"
+
+# Blender model geometrisi (Blender gerekmez)
+echo ""
+python3 "$ROOT/tools/blender/test_geometry.py"

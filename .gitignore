@@ -25,3 +25,8 @@ tmp/
 # Simülasyon çıktıları
 build/sim/
 build/config.json
+
+# Python önbelleği ve Blender çıktıları
+__pycache__/
+*.pyc
+tools/blender/out/
