@@ -67,9 +67,16 @@ describe("Config bütünlüğü", function()
 			expect.greater(zone.requiredRebirths, previous, zone.id)
 			previous = zone.requiredRebirths
 		end
-		expect.truthy(Config.Zones.isUnlocked("hub", 0))
-		expect.falsy(Config.Zones.isUnlocked("void_vault", 5))
-		expect.truthy(Config.Zones.isUnlocked("void_vault", 6))
+		expect.truthy(Config.Zones.isUnlocked("hub", 0), "başlangıç bölgesi hep açık")
+
+		-- Eşik değerleri denge ayarıyla değişiyor; test sayıyı değil kuralı
+		-- doğruluyor: her bölge kendi eşiğinde açılır, bir altında açılmaz.
+		for _, zone in Config.Zones.List do
+			expect.truthy(Config.Zones.isUnlocked(zone.id, zone.requiredRebirths), zone.id)
+			if zone.requiredRebirths > 0 then
+				expect.falsy(Config.Zones.isUnlocked(zone.id, zone.requiredRebirths - 1), zone.id)
+			end
+		end
 	end)
 
 	it("savunma istatistikleri seviye 0'da kapalı", function()
@@ -86,6 +93,39 @@ describe("Config bütünlüğü", function()
 			expect.greater(upgrade.maxLevel, 0, upgrade.id)
 			expect.greater(upgrade.costGrowth, 1, upgrade.id)
 			expect.greater(Config.Upgrades.cost(upgrade.id, 5), Config.Upgrades.cost(upgrade.id, 4), upgrade.id)
+		end
+	end)
+
+	it("sandık alıp hazineyi satmak kâr ettirmez", function()
+		-- Bu testin yakaladığı hata: Ahşap Sandık 250 coin'e satılırken
+		-- içinden çıkan hazinenin ortalama satış değeri 1.080 coin'di.
+		-- Kasaya hazine koymanın hiçbir anlamı kalmıyordu.
+		local Loot = require(ReplicatedStorage.Shared.Core.Loot)
+		local Economy = require(ReplicatedStorage.Shared.Core.Economy)
+
+		-- Şans yükseltmesi beklenen değeri yükseltiyor; en kötü durumda bak.
+		local maxLuck = 1 + Config.Upgrades.effect("luck", Config.Upgrades.get("luck").maxLevel)
+		maxLuck *= 1.1 -- VIP
+
+		local expectedMutation = 0
+		for _, mutation in Config.Mutations.List do
+			expectedMutation += Loot.mutationChance(mutation.id, 1) * mutation.multiplier
+		end
+
+		for _, crate in Config.Crates.List do
+			if crate.currency ~= "coins" then
+				continue
+			end
+			local expectedIncome = 0
+			for _, rarity in Config.Rarities.List do
+				expectedIncome += Loot.rarityChance(crate.id, rarity.id, maxLuck) * rarity.baseIncome
+			end
+			expectedIncome *= expectedMutation
+
+			local refund = expectedIncome
+				* Config.Rarities.SellSeconds
+				* Config.Balance.Economy.sellRefundShare
+			expect.less(refund / crate.cost, 0.6, `{crate.name} al-sat oranı`)
 		end
 	end)
 

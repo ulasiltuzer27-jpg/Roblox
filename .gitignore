@@ -21,3 +21,7 @@ out/
 # Geçici
 tmp/
 *.log
+
+# Simülasyon çıktıları
+build/sim/
+build/config.json

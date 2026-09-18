@@ -12,7 +12,7 @@ src/client/          Arayüz ve girdi. Hiçbir oyun kararı vermez.
 
 Kural: **Core hiçbir zaman Roblox servisi çağırmaz.** Loot zarı, alarm
 matematiği, çalınan pay, koridor üreteci, event zamanlaması — hepsi saf
-fonksiyon. Bu yüzden 132 test gerçek Roblox olmadan koşuyor ve denge
+fonksiyon. Bu yüzden 141 test gerçek Roblox olmadan koşuyor ve denge
 değişikliği anında doğrulanabiliyor.
 
 Bağımlılıklar servis ağacı üzerinden çözülüyor

@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Economy = require(ReplicatedStorage.Shared.Core.Economy)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 local DataService = require(ServerScriptService.Server.Services.DataService)
 local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local SyncService = require(ServerScriptService.Server.Services.SyncService)
@@ -57,8 +58,8 @@ function RebirthService.travel(player: Player, payload: any): (boolean, any)
 		return false, "Profil yüklenmedi."
 	end
 
-	local zoneId = payload and payload.zoneId
-	if type(zoneId) ~= "string" or not Config.Zones.ById[zoneId] then
+	local zoneId = Validate.oneOf(payload and payload.zoneId, Config.Zones.ById)
+	if not zoneId then
 		return false, "Böyle bir bölge yok."
 	end
 	if not Config.Zones.isUnlocked(zoneId, profile.rebirths) then

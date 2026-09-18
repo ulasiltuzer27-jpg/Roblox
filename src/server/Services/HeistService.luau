@@ -15,6 +15,7 @@ local Heist = require(ReplicatedStorage.Shared.Core.Heist)
 local Layout = require(ReplicatedStorage.Shared.Core.Layout)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local Signal = require(ReplicatedStorage.Shared.Core.Signal)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 local ArenaService = require(ServerScriptService.Server.Services.ArenaService)
 local Contexts = require(ServerScriptService.Server.Services.Contexts)
 local CorridorBuilder = require(ServerScriptService.Server.Services.CorridorBuilder)
@@ -298,12 +299,15 @@ local function step(session, deltaTime: number)
 			0,
 			session.lastPosition.Z
 		)).Magnitude
+		-- Tolerans tik başına değil, tek seferlik küçük bir pay olmalı:
+		-- 12 stud'luk pay 20 Hz'de saniyede 240 stud'luk ışınlanmaya izin
+		-- veriyordu, yani anti-cheat hiçbir şey yakalamıyordu.
 		local allowed = Config.Balance.AntiCheat.maxHorizontalSpeed * deltaTime
 			+ Config.Balance.AntiCheat.positionToleranceStuds
 		if traveled > allowed then
 			session.violations += 1
 			session.player.Character:PivotTo(session.corridor.origin * CFrame.new(session.lastPosition))
-			if session.violations >= 3 then
+			if session.violations >= Config.Balance.AntiCheat.maxViolations then
 				finish(session, false, "caught")
 				return
 			end
@@ -354,8 +358,9 @@ function HeistService.start(player: Player, payload: any): (boolean, any)
 		return false, "Zaten bir soygundasın."
 	end
 
-	local targetUserId = tonumber(payload and payload.targetUserId)
-	if not targetUserId then
+	-- NPC kasaları negatif kimlik taşıyor, gerçek oyuncular pozitif.
+	local targetUserId = Validate.integer(payload and payload.targetUserId, -1000, 2 ^ 53)
+	if not targetUserId or targetUserId == 0 then
 		return false, "Hedef seçilmedi."
 	end
 

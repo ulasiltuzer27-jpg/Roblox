@@ -11,6 +11,7 @@ local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Heist = require(ReplicatedStorage.Shared.Core.Heist)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local Signal = require(ReplicatedStorage.Shared.Core.Signal)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 local Bots = require(ReplicatedStorage.Shared.Core.Bots)
 local BotVaultService = require(ServerScriptService.Server.Services.BotVaultService)
 local Contexts = require(ServerScriptService.Server.Services.Contexts)
@@ -168,7 +169,7 @@ function VaultService.place(player: Player, uid: string, slotIndex: number?): (b
 	if not profile then
 		return false, "Profil yüklenmedi."
 	end
-	if not profile.treasures[uid] then
+	if not Validate.identifier(uid) or not profile.treasures[uid] then
 		return false, "Böyle bir hazinen yok."
 	end
 	if table.find(profile.placed, uid) then
@@ -178,7 +179,8 @@ function VaultService.place(player: Player, uid: string, slotIndex: number?): (b
 		return false, "Kasanda boş yuva yok. Kasa Rafı yükseltmesine bak."
 	end
 
-	local index = math.clamp(math.floor(tonumber(slotIndex) or (#profile.placed + 1)), 1, #profile.placed + 1)
+	-- Yuva sırasını kırpmak zararsız: hangi sırada durduğu oynanışı etkilemiyor.
+	local index = Validate.clampedInteger(slotIndex, 1, #profile.placed + 1, #profile.placed + 1)
 	table.insert(profile.placed, index, uid)
 
 	SyncService.markDirty(player)
@@ -190,6 +192,9 @@ function VaultService.unplace(player: Player, uid: string): (boolean, string?)
 	local profile = DataService.get(player)
 	if not profile then
 		return false, "Profil yüklenmedi."
+	end
+	if not Validate.identifier(uid) then
+		return false, "Bu hazine kasada değil."
 	end
 	local index = table.find(profile.placed, uid)
 	if not index then

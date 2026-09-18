@@ -5,6 +5,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 local DataService = require(ServerScriptService.Server.Services.DataService)
 local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local SyncService = require(ServerScriptService.Server.Services.SyncService)
@@ -18,8 +19,8 @@ function DefenseService.buy(player: Player, payload: any): (boolean, any)
 		return false, "Profil yüklenmedi."
 	end
 
-	local defenseId = payload and payload.defenseId
-	if type(defenseId) ~= "string" or not Config.Defenses.ById[defenseId] then
+	local defenseId = Validate.oneOf(payload and payload.defenseId, Config.Defenses.ById)
+	if not defenseId then
 		return false, "Böyle bir savunma yok."
 	end
 
@@ -49,8 +50,8 @@ function DefenseService.buyUpgrade(player: Player, payload: any): (boolean, any)
 		return false, "Profil yüklenmedi."
 	end
 
-	local upgradeId = payload and payload.upgradeId
-	if type(upgradeId) ~= "string" or not Config.Upgrades.ById[upgradeId] then
+	local upgradeId = Validate.oneOf(payload and payload.upgradeId, Config.Upgrades.ById)
+	if not upgradeId then
 		return false, "Böyle bir yükseltme yok."
 	end
 

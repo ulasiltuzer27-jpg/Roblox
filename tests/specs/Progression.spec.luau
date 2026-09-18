@@ -67,7 +67,8 @@ local function sellLoose(profile)
 	end
 	for uid, treasure in profile.treasures do
 		if not placedSet[uid] then
-			profile.coins += Economy.treasureValue(treasure)
+			-- Satış tam değerden değil, sellRefundShare oranından.
+			profile.coins += Economy.treasureValue(treasure) * Config.Balance.Economy.sellRefundShare
 			profile.treasures[uid] = nil
 		end
 	end
@@ -179,23 +180,23 @@ describe("İlerleme simülasyonu", function()
 		expect.falsy(Economy.canRebirth(median, 0), `10 dakikalık ortanca servet {median}`)
 	end)
 
-	it("yirmi dakikada ortanca oyuncu rebirth'e ulaşır", function()
+	it("yarım saatte ortanca oyuncu rebirth'e ulaşır", function()
 		local worths = {}
 		for seed = 1, 11 do
-			table.insert(worths, Economy.netWorth(simulate(1200, seed * 137)))
+			table.insert(worths, Economy.netWorth(simulate(1800, seed * 137)))
 		end
 		table.sort(worths)
 		local median = worths[math.ceil(#worths / 2)]
-		expect.truthy(Economy.canRebirth(median, 0), `20 dakikalık ortanca servet {median}`)
+		expect.truthy(Economy.canRebirth(median, 0), `30 dakikalık ortanca servet {median}`)
 	end)
 
-	it("bir saatte rebirth her tohumda erişilebilir", function()
+	it("iki saatte rebirth her tohumda erişilebilir", function()
 		-- Şansı kötü giden oyuncu da tıkanıp kalmasın.
 		for seed = 1, 5 do
-			local profile = simulate(3600, seed * 991)
+			local profile = simulate(7200, seed * 991)
 			expect.truthy(
 				Economy.canRebirth(Economy.netWorth(profile), 0),
-				`tohum {seed}: bir saatte rebirth gelmeli`
+				`tohum {seed}: iki saatte rebirth gelmeli`
 			)
 		end
 	end)
@@ -235,8 +236,9 @@ describe("İlerleme simülasyonu", function()
 			ownerOnline = true,
 			eventShareMultiplier = 1,
 		})
-		-- En güçlü savunma bile payı yarıdan fazla kısamaz.
-		expect.greater(share, Config.Balance.Heist.baseStealShare * 0.5 - 1e-9)
+		-- En güçlü savunma bile soygunu değersizleştiremez: hırsız yine de
+		-- taban payın üçte birinden fazlasını alır.
+		expect.greater(share, Config.Balance.Heist.baseStealShare * 0.33)
 	end)
 
 	it("farklı tohumlar benzer tempo üretir", function()

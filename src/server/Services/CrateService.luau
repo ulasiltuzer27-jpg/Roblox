@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Economy = require(ReplicatedStorage.Shared.Core.Economy)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local Rng = require(ReplicatedStorage.Shared.Core.Rng)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 local Signal = require(ReplicatedStorage.Shared.Core.Signal)
 local Contexts = require(ServerScriptService.Server.Services.Contexts)
 local DataService = require(ServerScriptService.Server.Services.DataService)
@@ -53,11 +54,14 @@ function CrateService.buy(player: Player, payload: any): (boolean, any)
 		return false, "Profil yüklenmedi."
 	end
 
-	local crateId = payload and payload.crateId
-	if type(crateId) ~= "string" or not Config.Crates.ById[crateId] then
+	local crateId = Validate.oneOf(payload and payload.crateId, Config.Crates.ById)
+	if not crateId then
 		return false, "Böyle bir sandık yok."
 	end
-	local amount = math.clamp(math.floor(tonumber(payload.amount) or 1), 1, CRATES.bulkOpenLimit)
+	local amount = Validate.integer(payload.amount, 1, CRATES.bulkOpenLimit)
+	if not amount then
+		return false, "Geçersiz adet."
+	end
 	local crate = Config.Crates.get(crateId)
 
 	if not Config.Zones.isUnlocked(crate.zone, profile.rebirths) then
@@ -93,8 +97,8 @@ function CrateService.open(player: Player, payload: any): (boolean, any)
 		return false, "Profil yüklenmedi."
 	end
 
-	local crateId = payload and payload.crateId
-	if type(crateId) ~= "string" or not Config.Crates.ById[crateId] then
+	local crateId = Validate.oneOf(payload and payload.crateId, Config.Crates.ById)
+	if not crateId then
 		return false, "Böyle bir sandık yok."
 	end
 
@@ -106,7 +110,10 @@ function CrateService.open(player: Player, payload: any): (boolean, any)
 		return false, "Envanterin dolu. Birkaç hazine sat."
 	end
 
-	local amount = math.clamp(math.floor(tonumber(payload.amount) or 1), 1, math.min(owned, CRATES.bulkOpenLimit))
+	local amount = Validate.integer(payload.amount, 1, math.min(owned, CRATES.bulkOpenLimit))
+	if not amount then
+		return false, "Geçersiz adet."
+	end
 	local context = {
 		luck = Contexts.luck(player, profile),
 		mutationLuck = Contexts.mutationLuck(player, profile),

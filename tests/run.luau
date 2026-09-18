@@ -6,6 +6,7 @@
 local Framework = require("./framework")
 
 require("./specs/Format.spec")
+require("./specs/Validate.spec")
 require("./specs/Rng.spec")
 require("./specs/Loot.spec")
 require("./specs/Economy.spec")

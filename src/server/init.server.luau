@@ -4,8 +4,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Remotes = require(ReplicatedStorage.Shared.Net.Remotes)
+local Validate = require(ReplicatedStorage.Shared.Core.Validate)
 
 local Services = ServerScriptService.Server.Services
 
@@ -52,8 +54,13 @@ local function registerActions()
 	end)
 
 	NetService.register(Actions.SellTreasures, function(player, payload)
-		local uids = payload and payload.uids
-		if type(uids) ~= "table" then
+		-- Sınır önemli: sınırsız liste sunucuyu döngüde tutar.
+		local uids = Validate.list(
+			payload and payload.uids,
+			Config.Balance.Crates.maxInventoryTreasures,
+			Validate.identifier
+		)
+		if not uids then
 			return false, "Satılacak hazine seçilmedi."
 		end
 		return VaultService.sell(player, uids)

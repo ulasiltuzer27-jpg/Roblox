@@ -65,18 +65,21 @@ describe("Economy", function()
 
 	it("çevrimdışı kazanç tavanlı ve verimi düşük", function()
 		local rate = 10
-		local eightHours = 8 * 3600
-		local expected = rate * eightHours * Config.Balance.Offline.efficiency
-		expect.equal(Economy.offlineEarnings(rate, eightHours, false), expected)
-		-- 3 gün çevrimdışı kalsan da 8 saatten fazlası yazılmaz.
+		local capSeconds = Config.Balance.Offline.capHours * 3600
+		local expected = rate * capSeconds * Config.Balance.Offline.efficiency
+		expect.equal(Economy.offlineEarnings(rate, capSeconds, false), expected)
+		-- 3 gün çevrimdışı kalsan da tavandan fazlası yazılmaz.
 		expect.equal(Economy.offlineEarnings(rate, 3 * 86400, false), expected)
+		expect.less(Config.Balance.Offline.efficiency, 1, "çevrimdışı verim çevrimiçinin altında")
 	end)
 
 	it("Otomatik Toplama çevrimdışı tavanı büyütür", function()
 		local rate = 10
 		local withPass = Economy.offlineEarnings(rate, 86400, true)
 		local without = Economy.offlineEarnings(rate, 86400, false)
-		expect.near(withPass / without, 12 / 8, 1e-9)
+		local offline = Config.Balance.Offline
+		expect.near(withPass / without, offline.capHoursWithGamepass / offline.capHours, 1e-9)
+		expect.greater(offline.capHoursWithGamepass, offline.capHours, "gamepass avantajı")
 	end)
 
 	it("negatif süre para basmaz", function()

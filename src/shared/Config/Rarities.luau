@@ -27,8 +27,12 @@ for _, rarity in Rarities.List do
 	Rarities.ById[rarity.id] = rarity
 end
 
--- Hazineyi satarken kaç saniyelik gelirine denk para verilir.
-Rarities.SellSeconds = 180
+-- Bir hazinenin "varlık değeri": kaç saniyelik gelirine denk sayılır.
+-- Servet (net worth) hesabı bunu kullanır. Satışta ayrıca
+-- Balance.Economy.sellRefundShare uygulanır -- ikisi bilerek ayrı:
+-- varlık değeri yüksek, nakde çevirme oranı düşük olmalı, yoksa
+-- "sandık al, hazineyi sat" kendi başına para basar.
+Rarities.SellSeconds = 120
 
 function Rarities.get(id: string): Rarity
 	local rarity = Rarities.ById[id]

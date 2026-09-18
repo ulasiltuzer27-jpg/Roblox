@@ -44,9 +44,10 @@ açık olmalı; kapalıysa oyun yine çalışır ama kayıt bellek içinde tutul
 
 | Komut | Ne yapar |
 |---|---|
-| `./scripts/test.sh` | Oyun matematiğinin testlerini koşar (132 test, Roblox gerekmez) |
+| `./scripts/test.sh` | Oyun matematiğinin testlerini koşar (141 test, Roblox gerekmez) |
 | `./scripts/check.sh` | Bütün `.luau` dosyalarını derleyerek sözdizimini doğrular |
 | `./scripts/balance.sh` | Denge raporu: sandık geri ödeme süreleri, rebirth eşikleri, maliyet tabloları |
+| `./scripts/sim.sh` | Ekonomi simülasyonu: dört oyuncu arketipi, Monte Carlo, ölçüt uyarıları + grafikler |
 
 Testler `luau` ikilisiyle koşar. PATH'te değilse: `LUAU_BIN=/yol/luau ./scripts/test.sh`
 
@@ -59,7 +60,8 @@ src/shared/Net/       Remote tanımları
 src/server/Services/  Kayıt, ekonomi, soygun oturumu, dünya, monetizasyon
 src/client/           Arayüz ve girdi
 tests/                Core + Config testleri
-tools/                Denge raporu
+tools/                Denge raporu ve config dışa aktarımı
+sim/                  Python ekonomi simülasyonu (oyunun kendi sayılarını okur)
 docs/                 Tasarım, ekonomi, mimari, yayın kontrol listesi
 ```
 

@@ -60,11 +60,12 @@ kendini ödesin.
 
 | Sandık | Fiyat | Beklenen gelir/sn | Geri ödeme | Bölge çarpanıyla |
 |---|---|---|---|---|
-| Ahşap | 250 | 6 | 37 sn | 37 sn |
-| Demir | 5.000 | 19 | 4:12 | 4:12 |
-| Neon | 60.000 | 102 | 9:44 | 6:46 |
-| Glitch | 750.000 | 430 | 29:00 | 11:50 |
-| Boşluk | 12.000.000 | 1.940 | 1:42:57 | 20:35 |
+| Ahşap | 600 | 7 | 1.5 dk | 1.5 dk |
+| Demir | 5.000 | 20 | 4.2 dk | 4.2 dk |
+| Neon | 60.000 | 103 | 9.7 dk | 4.5 dk |
+| Glitch | 750.000 | 431 | 29 dk | 8.3 dk |
+| Boşluk | 7.000.000 | 1.940 | 60 dk | 7.5 dk |
+| Kuantum | 150.000.000 | 4.692 | 8.9 saat | 30 dk |
 
 "Bölge çarpanıyla" sütunu, o bölgeye ulaşmış oyuncunun tipik çarpanını
 (bölge bonusu × rebirth) hesaba katıyor — gerçekte hissedilen süre bu.
@@ -78,27 +79,29 @@ yolu daha iyi sandık.
 ## Rebirth
 
 ```
-gereken servet = 1.000.000 × 5.5^rebirth
+gereken servet = 250.000 × 5.5^rebirth
 kalıcı çarpan  = 1 + 0.25 × rebirth
 ```
 
 | Rebirth | Gereken servet | Çarpan | Açılan bölge |
 |---|---|---|---|
-| 1 | 1M | x1.25 | Neon Şehir |
-| 2 | 5.5M | x1.5 | |
-| 3 | 30M | x1.75 | Glitch Sektörü |
-| 4 | 166M | x2 | |
-| 6 | 5B | x2.5 | Boşluk Kasası |
+| 1 | 250K | x1.25 | |
+| 2 | 1.4M | x1.5 | Neon Şehir |
+| 3 | 7.6M | x1.75 | |
+| 6 | 1.3B | x2.5 | Glitch Sektörü |
+| 12 | 30T | x4 | Boşluk Kasası |
+| 20 | 14Qa | x6 | Kuantum Kasa |
 
-Bu eşik tahmin değil, ölçüm: `tests/specs/Progression.spec.luau` gerçek
-loot ve ekonomi fonksiyonlarıyla oyuncu simüle ediyor. 25 tohumluk örneklemde
-ortanca servet **5 dakikada 158K, 10 dakikada 445K, 15 dakikada 1.0M,
-20 dakikada 1.66M**. 1M eşiği ilk rebirth'ü 15-20 dakikaya koyuyor — oyuncu
-rebirth'ten önce soygun dahil bütün döngüyü bir kez görsün diye.
+Eşikler tahmin değil ölçüm: `sim/` altındaki simülasyon gerçek loot ve
+ekonomi fonksiyonlarıyla dört oyuncu arketipini koşturuyor. Ölçülen tempo
+(oyun içinde geçen dakika, ortanca oyuncu):
 
-İlk ölçümde eşik 150K'daydı ve ortanca oyuncu **8 dakikada** rebirth
-yapabiliyordu; simülasyon bunu yakaladı. Denge değiştirirsen bu testler
-kırılacak — kırılması "yanlış" demek değil, "kararı yeniden ver" demek.
+| Arketip | 1. rebirth | 3. rebirth | 6. rebirth |
+|---|---|---|---|
+| Ara sıra giren (24 dk/gün) | 12 dk | 60 dk | 156 dk |
+| Düzenli oyuncu (75 dk/gün) | 24 dk | 75 dk | 193 dk |
+| Hardcore (240 dk/gün) | 16 dk | 81 dk | 240 dk |
+| Ödeme yapan | 12 dk | 43 dk | 108 dk |
 
 Sıfırlananlar: coin, hazineler, yükseltmeler. **Savunmalar kalır** — aksi
 halde rebirth sonrası kasan savunmasız kalır ve hemen soyulursun. Ayrıca
@@ -107,12 +110,35 @@ halde rebirth sonrası kasan savunmasız kalır ve hemen soyulursun. Ayrıca
 Rebirth ayrıca jeton veriyor (n'inci rebirth → n jeton). Jetonlar yalnızca
 Fırtına Sandığı'nda (3 jeton, sadece Efsanevi+) harcanıyor.
 
+## Satış ekonomisi
+
+```
+varlık değeri  = gelir/sn × 120        (servet hesabı bunu kullanır)
+satış geliri   = varlık değeri × 0.25   (nakde çevirme oranı)
+```
+
+İkisi bilerek ayrı. İlk sürümde satış oranı 1.0'dı ve Ahşap Sandık 250
+coin'e satılırken içinden çıkan hazinenin ortalama satış değeri 1.080
+coin'di: **sandık alıp hazineyi satmak tek başına para basıyordu** ve
+kasaya hazine koymanın hiçbir anlamı kalmıyordu. Simülasyon yakaladı.
+
+Kural: beklenen satış iadesi / sandık fiyatı oranı hiçbir sandıkta 0.6'yı
+geçmemeli. `tests/specs/Config.spec.luau` bunu en yüksek şans çarpanında
+bile doğruluyor.
+
+| Sandık | Fiyat | Beklenen iade | Oran |
+|---|---|---|---|
+| Ahşap | 600 | 199 | 0.33 |
+| Demir | 5.000 | 594 | 0.12 |
+| Neon | 60.000 | 3.08K | 0.05 |
+| Glitch | 750.000 | 12.9K | 0.02 |
+
 ## Soygun ekonomisi
 
 ```
 pay = 0.22 + çanta yükseltmesi (seviye başına +%2)
     + 0.15 (mükemmel soygun)
-pay × = (1 - min(0.5, savunma puanı / 400))
+pay × = (1 - min(0.65, savunma puanı / 800))
 pay × = event çarpanı
 pay × = 0.5 (hedef çevrimdışıysa)
 tavan = %60 (Kasa Fırtınası'nda %75)
@@ -121,8 +147,17 @@ tavan = %60 (Kasa Fırtınası'nda %75)
 Savunma puanı = Σ(seviye × ağırlık × 10) × savunma yükseltmesi × VIP Kilit
 (x1.35) × çevrimdışı bonusu (x1.25) × event çarpanı.
 
-Örnek: savunmasız kasadan %22, iyi savunulmuş kasadan (puan 400+) %11,
-çevrimdışı iyi savunulmuş kasadan %5.5 alınıyor.
+Bölen ilk sürümde 400 ve tavan 0.5'ti: direnç 200 puanda doluyordu, oysa
+tam donanımlı bir kasa ~800 puan üretiyor — yani savunma harcamasının
+dörtte üçü çalınan paya hiç etki etmiyordu. Şimdi eğri yatırımın tamamı
+boyunca anlamlı:
+
+| Savunma puanı | Çevrimdışı kayıp |
+|---|---|
+| 0 | %11.0 |
+| 100 | %9.6 |
+| 250 | %7.6 |
+| 520+ | %3.9 (tavan) |
 
 Yakalanan hırsız 25 saniye hapis yatıyor (VIP ile 12.5) ve kasa sahibine
 birikimin %5'i tazminat yazılıyor — **savunma yatırımının geri dönüşü bu**.
@@ -142,12 +177,28 @@ yoktan var edilir) — bu yüzden birikimleri hırsızın kendi gelirine bağlı
 `maxStashMultiplier` ile tavanlı, ayrıca yalnızca sunucuda az gerçek hedef
 varken listeye giriyorlar.
 
+## Çevrimdışı gelir dengesi
+
+İlk ölçümde çevrimdışı verim %50 ve tavan 8 saatti. Sonuç: düzenli
+oyuncunun gelirinin **%82'si** çevrimdışından geliyordu — yani oyuna girip
+oynamanın ekonomik karşılığı yoktu, en verimli strateji "gir, topla, çık"
+oluyordu. Oturum süresi ve ertesi gün dönüşü keşfet algoritmasının baktığı
+metrikler olduğu için bu doğrudan bir büyüme sorunu.
+
+Verim %25'e, tavan 6 saate çekildi. Şimdi düzenli oyuncunun gelirinin
+%36'sı, hardcore oyuncunun %82'si oyundayken kazanılıyor.
+
 ## Denge ayarı yaparken
 
 1. `src/shared/Config/` içinde sayıyı değiştir
 2. `./scripts/balance.sh` — geri ödeme süreleri ve eşikler ne oldu?
-3. `./scripts/test.sh` — tutarlılık testleri (bilinmeyen id, negatif
-   maliyet, bozuk ödül tanımı) kırıldı mı?
+3. `./scripts/sim.sh` — arketipler nereye gidiyor, ölçüt uyarısı var mı?
+4. `./scripts/test.sh` — tutarlılık ve tempo testleri kırıldı mı?
+
+`./scripts/sim.sh` dengede otomatik ölçüt kontrolü yapıyor: sandık geri
+ödeme süresi, ilk rebirth temposu, içerik tüketimi, al-sat kârlılığı,
+soygun gelirinin payı ve çevrimiçi gelirin payı. Uyarı çıkarsa rapor
+sebebini yazıyor.
 
 Canlıda izlenecek sayılar:
 

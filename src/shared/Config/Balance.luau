@@ -17,9 +17,14 @@ Balance.Vault = {
 }
 
 Balance.Offline = {
-	efficiency = 0.5, -- çevrimdışı gelir oranı
-	capHours = 8,
-	capHoursWithGamepass = 12,
+	-- Simülasyon, 0.5 verim ve 8 saat tavanla gelirin **%82'sinin**
+	-- çevrimdışından geldiğini gösterdi: oyuna girip oynamanın ekonomik
+	-- karşılığı yoktu, "gir-topla-çık" en verimli strateji oluyordu.
+	-- Oturum süresi ve ertesi gün dönüşü keşfet algoritmasının baktığı
+	-- metrikler olduğu için bu doğrudan bir büyüme sorunu.
+	efficiency = 0.25,
+	capHours = 6,
+	capHoursWithGamepass = 10,
 }
 
 Balance.Heist = {
@@ -33,8 +38,12 @@ Balance.Heist = {
 	maxStealShareBoosted = 0.75,
 
 	-- Savunma puanı payı düşürür: share * (1 - min(cap, score / divisor))
-	defenseShareDivisor = 400,
-	defenseShareCap = 0.5,
+	-- 400/0.5 iken direnç 200 puanda tavana vuruyordu; tam donanımlı bir
+	-- kasa ~800 puan ürettiği için savunma harcamasının dörtte üçü çalınan
+	-- paya hiç etki etmiyordu (simülasyon yakaladı). Artık eğri yatırımın
+	-- tamamı boyunca anlamlı.
+	defenseShareDivisor = 800,
+	defenseShareCap = 0.65,
 
 	-- Savunan çevrimdışıyken hem daha az kaybeder hem daha iyi savunur.
 	offlineDefenderShareMultiplier = 0.5,
@@ -52,7 +61,10 @@ Balance.Heist = {
 	-- Bekleme süreleri (saniye)
 	vaultRobCooldown = 90, -- aynı kasa ne sıklıkla soyulabilir
 	sameTargetCooldown = 300, -- aynı hırsız aynı kasaya
-	thiefGlobalCooldown = 20, -- hırsızın iki soygun arası
+	-- Hırsızın iki soygun arası. 20 sn'de soygun geliri kasa gelirini
+	-- gölgede bırakıyordu; kapalı ekonomide herkes soyup kimse kasa
+	-- kurmazsa çalacak bir şey kalmaz.
+	thiefGlobalCooldown = 45,
 	shieldAfterRobbed = 60, -- soyulduktan sonra dokunulmazlık
 	newbieProtectionNetWorth = 5000,
 	targetNetWorthFloor = 0.5, -- hedefin serveti, hırsızınkinin en az yarısı olmalı
@@ -82,9 +94,12 @@ Balance.Corridor = {
 Balance.AntiCheat = {
 	-- İstemcinin bildirdiği kontrol noktaları sunucuda doğrulanır.
 	minSecondsPerSegment = 0.6,
-	maxHorizontalSpeed = 40, -- stud/sn, tolerans dahil
-	positionToleranceStuds = 12,
-	maxCheckpointSkips = 0,
+	maxHorizontalSpeed = 40, -- stud/sn; sunucunun izin verdiği koşu hızının üstü
+	-- Tik başına eklenen sabit pay. 12'ydi: 20 Hz'de saniyede 240 stud'luk
+	-- ışınlanmaya izin veriyordu ve anti-cheat pratikte hiçbir şey yakalamıyordu.
+	-- 3 stud, ağ gecikmesinden doğan sıçramalara yetiyor.
+	positionToleranceStuds = 3,
+	maxViolations = 3, -- bu kadar ihlalden sonra soygun yakalanmış sayılır
 }
 
 Balance.Crates = {
@@ -97,7 +112,12 @@ Balance.Economy = {
 	startingCoins = 250,
 	-- İlk 60 saniye: yeni oyuncu bunları hazır bulur, ilk ödülünü 10 saniyede alır.
 	starterCrates = { wood = 3 },
-	sellRefundShare = 1, -- hazine satarken alınan oran (1 = tam değer)
+	-- Hazine satarken varlık değerinin ne kadarı nakde dönüyor.
+	-- 1.0 iken "ucuz sandık al, çıkanı sat" beklenen değerde kâr ediyordu
+	-- (Ahşap: 250 coin sandık -> ortalama 1.080 coin hazine) ve kasaya
+	-- hazine yerleştirmenin hiçbir anlamı kalmıyordu. Ekonomi simülasyonu
+	-- yakaladı; sim/ ve tests/specs/Config.spec bunu bir daha bırakmıyor.
+	sellRefundShare = 0.25,
 }
 
 Balance.Bots = {

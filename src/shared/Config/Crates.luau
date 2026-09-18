@@ -2,8 +2,10 @@
 -- Sandıklar. Her sandık bir nadirlik ağırlık tablosu taşır; ağırlıklar
 -- Core/Loot içinde şans çarpanıyla yeniden şekillendirilir.
 --
--- Fiyatlandırma kuralı: bir sandık, o kademenin beklenen gelirine göre
+-- Fiyatlandırma kuralı 1: bir sandık, o kademenin beklenen gelirine göre
 -- kabaca 1-30 dakikada kendini ödesin (bkz. ./scripts/balance.sh).
+-- Fiyatlandırma kuralı 2: beklenen satış iadesi sandık fiyatının yarısını
+-- geçmesin, yoksa sandık alıp satmak tek başına para basar.
 -- Asıl darboğaz para değil yuva sayısı: üst kademe sandık, dolu bir yuvayı
 -- daha iyisiyle değiştirdiği için değerli.
 export type Crate = {
@@ -23,7 +25,7 @@ Crates.List = {
 		id = "wood",
 		name = "Ahşap Sandık",
 		zone = "hub",
-		cost = 250,
+		cost = 600,
 		currency = "coins",
 		openTime = 1.5,
 		weights = { common = 6000, uncommon = 3000, rare = 900, epic = 95, legendary = 5 },
@@ -59,10 +61,19 @@ Crates.List = {
 		id = "void",
 		name = "Boşluk Sandığı",
 		zone = "void_vault",
-		cost = 12000000,
+		cost = 7000000,
 		currency = "coins",
 		openTime = 3.5,
 		weights = { epic = 1800, legendary = 4200, mythic = 3200, secret = 800 },
+	},
+	{
+		id = "quantum",
+		name = "Kuantum Sandığı",
+		zone = "quantum",
+		cost = 150000000,
+		currency = "coins",
+		openTime = 4,
+		weights = { legendary = 2200, mythic = 5000, secret = 2800 },
 	},
 	{
 		-- Rebirth para birimiyle alınır, haftalık rotasyona en uygun sandık bu.

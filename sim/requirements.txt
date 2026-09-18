@@ -1,0 +1,4 @@
+# Grafikler için. Sadece metin raporu istiyorsan gerekmez:
+#   ./scripts/sim.sh --no-charts
+matplotlib>=3.7
+numpy>=1.24
