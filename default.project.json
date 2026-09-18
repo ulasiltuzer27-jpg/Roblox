@@ -25,7 +25,6 @@
     "Workspace": {
       "$className": "Workspace",
       "$properties": {
-        "_comment": "Soygun koridorları çalışma anında kuruluyor; akış (streaming) gecikmesinde hırsız zeminden düşebiliyor.",
         "StreamingEnabled": false
       }
     },

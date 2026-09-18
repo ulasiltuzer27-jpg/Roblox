@@ -1,6 +1,8 @@
 # Rojo / build çıktıları
 *.rbxl
 *.rbxlx
+# ...ama hazır yer dosyası depoda dursun: Rojo kurmadan da açılabilsin.
+!VaultHeist.rbxl
 *.rbxm
 *.rbxmx
 *.rbxl.lock

@@ -26,15 +26,25 @@ Yağmuru, Şanslı Sandıklar, Bekçi Grevi) tüm sunucularda **aynı anda** ba�
 
 ## Hızlı başlangıç
 
+**En hızlı yol:** depodaki [`VaultHeist.rbxl`](VaultHeist.rbxl) dosyasını
+indir ve Studio'da aç. Hiçbir araç kurmana gerek yok — F5 ile başlat.
+
+Geliştirmeye devam edecekseniz Rojo ile canlı bağlantı daha rahat:
+
 ```bash
 # Araçlar (rokit.toml içindeki sürümler)
 rokit install
 
-# Studio'ya bağlan
+# Studio'ya canlı bağlan
 rojo serve            # Studio'da Rojo eklentisinden Connect
-# veya tek dosya üret
-rojo build -o VaultHeist.rbxlx
+
+# veya yer dosyasını yeniden üret
+./scripts/build.sh          # VaultHeist.rbxl
+./scripts/build.sh --xml    # VaultHeist.rbxlx (git'te okunabilir)
 ```
+
+> `VaultHeist.rbxl` bir **derleme çıktısı**: kaynak değiştikçe eskir.
+> Kodda değişiklik yaptıktan sonra `./scripts/build.sh` ile yenile.
 
 Studio'da **Game Settings → Security → Enable Studio Access to API Services**
 açık olmalı; kapalıysa oyun yine çalışır ama kayıt bellek içinde tutulur
@@ -44,6 +54,7 @@ açık olmalı; kapalıysa oyun yine çalışır ama kayıt bellek içinde tutul
 
 | Komut | Ne yapar |
 |---|---|
+| `./scripts/build.sh` | Oynanabilir `VaultHeist.rbxl` yer dosyasını üretir |
 | `./scripts/test.sh` | Oyun matematiğinin testlerini koşar (142 test + model geometrisi, Roblox gerekmez) |
 | `./scripts/check.sh` | Bütün `.luau` dosyalarını derleyerek sözdizimini doğrular |
 | `./scripts/balance.sh` | Denge raporu: sandık geri ödeme süreleri, rebirth eşikleri, maliyet tabloları |

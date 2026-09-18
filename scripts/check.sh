@@ -28,3 +28,15 @@ if [ "$failed" -gt 0 ]; then
 	exit 1
 fi
 echo "$count dosyanın tamamı derlendi"
+
+# Depodaki yer dosyası bir derleme çıktısı: kaynak değişip o yenilenmezse
+# sessizce eskir ve Studio'da eski kodu açarsın. Uyar, ama hata verme.
+PLACE="$ROOT/VaultHeist.rbxl"
+if [ -f "$PLACE" ]; then
+	NEWER="$(find "$ROOT/src" "$ROOT/default.project.json" -newer "$PLACE" -print -quit 2>/dev/null || true)"
+	if [ -n "$NEWER" ]; then
+		echo ""
+		echo "uyarı: VaultHeist.rbxl kaynaktan eski görünüyor (${NEWER#"$ROOT"/} daha yeni)"
+		echo "       ./scripts/build.sh ile yenile"
+	fi
+fi
