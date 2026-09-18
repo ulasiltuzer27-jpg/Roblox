@@ -5,6 +5,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Net = require(script.Parent.Parent.Controllers.Net)
 local State = require(script.Parent.Parent.Controllers.State)
+local AmbienceController = require(script.Parent.Parent.Controllers.AmbienceController)
 local HeistController = require(script.Parent.Parent.Controllers.HeistController)
 
 local CratePanel = require(script.Parent.CratePanel)
@@ -17,6 +18,7 @@ local ShopPanel = require(script.Parent.ShopPanel)
 local TargetPanel = require(script.Parent.TargetPanel)
 local Toast = require(script.Parent.Toast)
 local VaultPanel = require(script.Parent.VaultPanel)
+local ZonePanel = require(script.Parent.ZonePanel)
 
 local App = {}
 
@@ -35,6 +37,7 @@ function App.mount()
 		targets = TargetPanel.mount(screen),
 		shop = ShopPanel.mount(screen),
 		leaderboard = LeaderboardPanel.mount(screen),
+		zones = ZonePanel.mount(screen),
 	}
 
 	Toast.mount(screen)
@@ -47,30 +50,47 @@ function App.mount()
 		setMode = HeistController.setMode,
 	})
 	HeistController.init(overlay)
+	AmbienceController.init()
 
 	-- Dünyadaki kiosklar ilgili paneli açar.
 	local promptTargets = {
 		["Sandık Dükkanı"] = "crates",
-		["Yükseltmeler"] = "defense",
+		["Kasam"] = "vault",
 		["Savunmalar"] = "defense",
 		["Soygun Panosu"] = "targets",
+		["Mağaza"] = "shop",
 	}
+
+	local function openOnly(key: string)
+		for name, panel in panels do
+			panel.setOpen(name == key)
+		end
+	end
 
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 		if player ~= Players.LocalPlayer then
 			return
 		end
-		local kioskName = prompt.Parent and prompt.Parent.Name
-		local key = promptTargets[kioskName]
+		local source = prompt.Parent
+		if not source then
+			return
+		end
+
+		-- Bölge kapısı: hedef bölge parçanın üstünde yazıyor.
+		local target = source:FindFirstChild("TargetZone")
+		if target and target:IsA("StringValue") then
+			task.spawn(Net.invoke, "TravelZone", { zoneId = target.Value })
+			return
+		end
+
+		local key = promptTargets[source.Name]
 		if key then
-			for name, panel in panels do
-				panel.setOpen(name == key)
-			end
+			openOnly(key)
 			if key == "targets" then
 				State.refreshTargets()
 			end
-		elseif kioskName == "Günlük Ödül" then
-			Net.invoke("ClaimDaily")
+		elseif source.Name == "Günlük Ödül" then
+			task.spawn(Net.invoke, "ClaimDaily")
 		end
 	end)
 

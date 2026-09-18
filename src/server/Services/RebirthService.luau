@@ -11,6 +11,7 @@ local DataService = require(ServerScriptService.Server.Services.DataService)
 local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local SyncService = require(ServerScriptService.Server.Services.SyncService)
 local VaultService = require(ServerScriptService.Server.Services.VaultService)
+local WorldService = require(ServerScriptService.Server.Services.WorldService)
 
 local RebirthService = {}
 
@@ -68,8 +69,17 @@ function RebirthService.travel(player: Player, payload: any): (boolean, any)
 		return false, `{zone.name} için {zone.requiredRebirths} rebirth gerekiyor.`
 	end
 
+	if profile.zone == zoneId then
+		return false, "Zaten bu bölgedesin."
+	end
+
 	profile.zone = zoneId
+	-- Eksik olan buydu: profil güncelleniyordu ama oyuncu yerinde kalıyordu,
+	-- yani bölgeler oyunda fiilen erişilemiyordu.
+	WorldService.placeInZone(player, zoneId, true)
+
 	SyncService.markDirty(player)
+	NotificationService.toast(player, `{Config.Zones.get(zoneId).name} bölgesindesin.`, "good")
 	return true, { zone = zoneId }
 end
 

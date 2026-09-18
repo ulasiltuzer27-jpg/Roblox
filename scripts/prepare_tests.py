@@ -66,7 +66,12 @@ def main() -> int:
 
     modules = copy_tree(ROOT / "src" / "shared", BUILD / "shared")
     specs = copy_tree(ROOT / "tests" / "specs", BUILD / "specs")
-    copy_tree(ROOT / "tools", BUILD / "tools")
+    # tools/studio içindekiler Command Bar scriptleri: modül değiller ve
+    # servis ağacı çözümlemesi kullanmıyorlar, çevrilemezler.
+    for path in sorted((ROOT / "tools").glob("*.luau")):
+        target = BUILD / "tools" / path.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(rewrite(path.read_text(encoding="utf-8"), target.parent), encoding="utf-8")
 
     for name in ("framework.luau", "run.luau"):
         source = ROOT / "tests" / name

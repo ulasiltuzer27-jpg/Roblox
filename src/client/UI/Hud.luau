@@ -164,7 +164,7 @@ function Hud.mount(parent: Instance, panels: { [string]: any })
 	-- Alt bar: panel düğmeleri
 	local dock = Widgets.frame({
 		Name = "Dock",
-		Size = UDim2.fromOffset(700, 52),
+		Size = UDim2.fromOffset(806, 52),
 		Position = UDim2.new(0.5, 0, 1, -16),
 		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundColor3 = Theme.color.panel,
@@ -183,6 +183,7 @@ function Hud.mount(parent: Instance, panels: { [string]: any })
 		{ key = "defense", text = "Savunma" },
 		{ key = "targets", text = "Soygun" },
 		{ key = "shop", text = "Mağaza" },
+		{ key = "zones", text = "Bölgeler" },
 		{ key = "leaderboard", text = "Sıralama" },
 	}
 

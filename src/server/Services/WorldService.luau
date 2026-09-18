@@ -1,6 +1,7 @@
 --!nonstrict
--- Hub'ı ve kasa parsellerini kod ile kurar. Haritayı Studio'da elle yapmak
--- yerine üretmek, yeni bölge eklemeyi tek satırlık iş haline getiriyor.
+-- Dünyayı kurar: beş bölge, kasa parselleri, kiosklar ve bölgeler arası
+-- kapılar. Geometri Core/MapLayout'tan geliyor (saf ve test edilmiş);
+-- buranın işi o tarifleri Instance'a çevirmek ve oyuncuları yönetmek.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -9,125 +10,182 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
+local MapLayout = require(ReplicatedStorage.Shared.Core.MapLayout)
 local DataService = require(ServerScriptService.Server.Services.DataService)
+local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local VaultService = require(ServerScriptService.Server.Services.VaultService)
 
 local WorldService = {}
 
--- Parsel sayısı, yerin "Max Players" ayarıyla uyumlu olmalı: parseli olmayan
--- oyuncunun kasası görünmez (soygun yine çalışır ama kasayı göremezsin).
-local PLOT_COUNT = 24
-local PLOT_RADIUS = 140
-local PEDESTALS_PER_ROW = 9
+local PEDESTALS_PER_ROW = 6
 
-local plots: { [number]: any } = {} -- plotIndex -> { model, userId }
-local byUser: { [number]: number } = {} -- userId -> plotIndex
+-- zoneId -> { folder, layout, plots = { {model, userId, ...} }, spawn }
+local zones: { [string]: any } = {}
+-- userId -> { zoneId, index }
+local assignments: { [number]: any } = {}
 
-local function newPart(name: string, size: Vector3, color: Color3, parent: Instance): Part
+--═══ Yardımcılar ═══════════════════════════════════════════════════════
+
+local function color3(rgb: { number }): Color3
+	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
+end
+
+local function vector3(values: { number }): Vector3
+	return Vector3.new(values[1], values[2], values[3])
+end
+
+local function cframeOf(position: { number }, rotation: { number }): CFrame
+	return CFrame.new(vector3(position))
+		* CFrame.Angles(math.rad(rotation[1]), math.rad(rotation[2]), math.rad(rotation[3]))
+end
+
+local function buildPart(spec, parent: Instance): Part
 	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = size
-	part.Color = color
+	part.Name = spec.name
+	part.Size = vector3(spec.size)
+	part.CFrame = cframeOf(spec.position, spec.rotation)
+	part.Color = color3(spec.color)
+	part.Material = (Enum.Material :: any)[spec.material]
 	part.Anchored = true
+	part.CanCollide = if spec.collide == nil then true else spec.collide
+	-- Dekoratif parçalar imleç ve raycast'i yakalamasın.
+	part.CanQuery = part.CanCollide
+	part.CanTouch = false
+	part.Transparency = spec.transparency or 0
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
+
+	if spec.shape == "Ball" then
+		part.Shape = Enum.PartType.Ball
+	elseif spec.shape == "Cylinder" then
+		part.Shape = Enum.PartType.Cylinder
+	end
+
+	if spec.light then
+		local light = Instance.new("PointLight")
+		light.Color = color3(spec.light.color)
+		light.Brightness = spec.light.brightness
+		light.Range = spec.light.range
+		light.Shadows = false
+		light.Parent = part
+	end
+
 	part.Parent = parent
 	return part
 end
 
-local function label(parent: BasePart, text: string, size: Vector2, offset: number): TextLabel
-	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.fromScale(size.X, size.Y)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, offset, 0)
-	billboard.AlwaysOnTop = false
-	billboard.MaxDistance = 220
-	billboard.Parent = parent
+local function billboard(parent: BasePart, text: string, width: number, height: number, offset: number): TextLabel
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromScale(width, height)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, offset, 0)
+	gui.MaxDistance = 260
+	gui.Parent = parent
 
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Size = UDim2.fromScale(1, 1)
-	textLabel.BackgroundTransparency = 1
-	textLabel.Font = Enum.Font.GothamBold
-	textLabel.TextScaled = true
-	textLabel.TextColor3 = Color3.fromRGB(240, 240, 250)
-	textLabel.TextStrokeTransparency = 0.4
-	textLabel.Text = text
-	textLabel.Parent = billboard
-	return textLabel
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(240, 240, 250)
+	label.TextStrokeTransparency = 0.35
+	label.Text = text
+	label.Parent = gui
+	return label
 end
 
-local function buildKiosk(parent: Instance, name: string, promptText: string, position: Vector3, color: Color3)
-	local kiosk = newPart(name, Vector3.new(6, 8, 2), color, parent)
+--═══ Kurulum ═══════════════════════════════════════════════════════════
+
+local function buildKiosk(spec, parent: Instance)
+	local kiosk = Instance.new("Part")
+	kiosk.Name = spec.name
+	kiosk.Size = vector3(Config.Map.Dimensions.kioskSize)
+	kiosk.CFrame = cframeOf(spec.position, spec.rotation)
+	kiosk.Color = color3(spec.color)
 	kiosk.Material = Enum.Material.Neon
-	kiosk.CFrame = CFrame.new(position) * CFrame.Angles(0, math.rad(180), 0)
+	kiosk.Anchored = true
+	kiosk.CanCollide = true
+	kiosk.CanTouch = false
+	kiosk.Parent = parent
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "Prompt"
-	prompt.ActionText = promptText
-	prompt.ObjectText = name
+	prompt.ActionText = spec.prompt
+	prompt.ObjectText = spec.name
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 12
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = kiosk
 
-	label(kiosk, name, Vector2.new(6, 1.4), 6)
+	billboard(kiosk, spec.name, 7, 1.5, Config.Map.Dimensions.kioskSize[2] / 2 + 1.6)
 	return kiosk
 end
 
-local function buildHub(): Folder
-	local folder = Instance.new("Folder")
-	folder.Name = "Hub"
+local function buildGate(spec, parent: Instance)
+	local gate = Instance.new("Part")
+	gate.Name = `Kapi_{spec.targetZone}`
+	gate.Size = Vector3.new(Config.Map.Dimensions.gateSize[1], 1, Config.Map.Dimensions.gateSize[3])
+	gate.CFrame = cframeOf(spec.position, spec.rotation) * CFrame.new(0, 0.5, 0)
+	gate.Transparency = 1
+	gate.Anchored = true
+	gate.CanCollide = false
+	gate.CanTouch = false
+	gate.Parent = parent
 
-	local floor = newPart("Zemin", Vector3.new(260, 2, 260), Color3.fromRGB(24, 26, 34), folder)
-	floor.CFrame = CFrame.new(0, -1, 0)
-	floor.Material = Enum.Material.Concrete
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "Prompt"
+	prompt.ActionText = "Git"
+	prompt.ObjectText = spec.label
+	prompt.HoldDuration = 0.4
+	prompt.MaxActivationDistance = 14
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = gate
 
-	local center = newPart("Merkez", Vector3.new(60, 0.4, 60), Color3.fromRGB(38, 42, 56), folder)
-	center.CFrame = CFrame.new(0, 0.2, 0)
-	center.Material = Enum.Material.Neon
-	center.Transparency = 0.6
+	local label = billboard(gate, spec.label, 12, 2, Config.Map.Dimensions.gateArchHeight + 2.6)
+	if spec.requiredRebirths > 0 then
+		label.Text = `{spec.label}\n🔒 {spec.requiredRebirths} rebirth`
+	end
 
-	local spawn = Instance.new("SpawnLocation")
-	spawn.Name = "Spawn"
-	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.CFrame = CFrame.new(0, 0.5, 0)
-	spawn.Anchored = true
-	spawn.Neutral = true
-	spawn.Duration = 0
-	spawn.BrickColor = BrickColor.new("Institutional white")
-	spawn.Material = Enum.Material.Neon
-	spawn.Transparency = 0.4
-	spawn.Parent = folder
+	-- Bölge kimliği istemci tarafında da lazım.
+	local value = Instance.new("StringValue")
+	value.Name = "TargetZone"
+	value.Value = spec.targetZone
+	value.Parent = gate
 
-	-- Kiosklar istemcideki panelleri açar (ProximityPrompt istemcide dinleniyor).
-	buildKiosk(folder, "Sandık Dükkanı", "Aç", Vector3.new(-22, 4, -26), Color3.fromRGB(255, 200, 64))
-	buildKiosk(folder, "Yükseltmeler", "Aç", Vector3.new(0, 4, -30), Color3.fromRGB(64, 255, 236))
-	buildKiosk(folder, "Savunmalar", "Aç", Vector3.new(22, 4, -26), Color3.fromRGB(122, 60, 255))
-	buildKiosk(folder, "Soygun Panosu", "Aç", Vector3.new(-22, 4, 26), Color3.fromRGB(255, 64, 88))
-	buildKiosk(folder, "Günlük Ödül", "Al", Vector3.new(22, 4, 26), Color3.fromRGB(92, 200, 122))
-
-	folder.Parent = Workspace
-	return folder
+	return gate, label
 end
 
-local function buildPlot(index: number, parent: Instance)
-	local angle = (index - 1) / PLOT_COUNT * math.pi * 2
-	local position = Vector3.new(math.cos(angle) * PLOT_RADIUS, 0, math.sin(angle) * PLOT_RADIUS)
-
+local function buildPlot(spec, parent: Instance)
 	local model = Instance.new("Model")
-	model.Name = `Kasa{index}`
+	model.Name = `Kasa{spec.index}`
 
-	local platform = newPart("Platform", Vector3.new(26, 1, 20), Color3.fromRGB(32, 34, 44), model)
-	platform.CFrame = CFrame.new(position) * CFrame.Angles(0, -angle + math.pi / 2, 0)
+	local dimensions = Config.Map.Dimensions
+	local anchor = Instance.new("Part")
+	anchor.Name = "Zemin"
+	anchor.Size = Vector3.new(dimensions.plotWidth - 1, 0.2, dimensions.plotDepth - 1)
+	anchor.CFrame = cframeOf(spec.position, spec.rotation) * CFrame.new(0, 1.1, 0)
+	anchor.Transparency = 1
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.Parent = model
 
-	local backWall = newPart("ArkaDuvar", Vector3.new(26, 14, 1), Color3.fromRGB(20, 21, 28), model)
-	backWall.CFrame = platform.CFrame * CFrame.new(0, 7, -9.5)
+	local sign = Instance.new("Part")
+	sign.Name = "Tabela"
+	sign.Size = Vector3.new(dimensions.plotWidth - 6, 3, 0.4)
+	sign.CFrame = cframeOf(spec.position, spec.rotation)
+		* CFrame.new(0, dimensions.plotWallHeight - 2, -(dimensions.plotDepth / 2 - 2))
+	sign.Color = Color3.fromRGB(14, 15, 20)
+	sign.Material = Enum.Material.SmoothPlastic
+	sign.Anchored = true
+	sign.CanCollide = false
+	sign.CanTouch = false
+	sign.Parent = model
 
-	local sign = newPart("Tabela", Vector3.new(14, 3, 0.5), Color3.fromRGB(16, 17, 22), model)
-	sign.CFrame = backWall.CFrame * CFrame.new(0, 4, 0.8)
-	local nameLabel = label(sign, "Boş Kasa", Vector2.new(12, 2.4), 2)
-	nameLabel.Name = "Sahip"
-	local statLabel = label(sign, "", Vector2.new(12, 1.8), -0.6)
-	statLabel.Name = "Durum"
+	local owner = billboard(sign, "Boş Kasa", 14, 2.2, 1.8)
+	owner.Name = "Sahip"
+	local status = billboard(sign, "", 14, 1.6, -0.3)
+	status.Name = "Durum"
+	status.TextColor3 = Color3.fromRGB(160, 166, 184)
 
 	local pedestals = Instance.new("Folder")
 	pedestals.Name = "Kaideler"
@@ -135,19 +193,79 @@ local function buildPlot(index: number, parent: Instance)
 
 	model.Parent = parent
 	return {
+		index = spec.index,
 		model = model,
-		platform = platform,
-		nameLabel = nameLabel,
-		statLabel = statLabel,
+		anchor = anchor,
+		owner = owner,
+		status = status,
 		pedestals = pedestals,
 		userId = nil,
 	}
 end
 
+local function buildZone(zoneId: string, parent: Instance)
+	local layout = MapLayout.build(zoneId)
+	local theme = Config.Map.theme(zoneId)
+
+	local folder = Instance.new("Folder")
+	folder.Name = zoneId
+	folder.Parent = parent
+
+	local structure = Instance.new("Folder")
+	structure.Name = "Yapi"
+	structure.Parent = folder
+	for _, spec in layout.parts do
+		buildPart(spec, structure)
+	end
+
+	local kioskFolder = Instance.new("Folder")
+	kioskFolder.Name = "Kiosklar"
+	kioskFolder.Parent = folder
+	for _, spec in layout.kiosks do
+		buildKiosk(spec, kioskFolder)
+	end
+
+	local gateFolder = Instance.new("Folder")
+	gateFolder.Name = "Kapilar"
+	gateFolder.Parent = folder
+	for _, spec in layout.gates do
+		buildGate(spec, gateFolder)
+	end
+
+	local plotFolder = Instance.new("Folder")
+	plotFolder.Name = "Kasalar"
+	plotFolder.Parent = folder
+
+	local plots = {}
+	for _, spec in layout.plots do
+		table.insert(plots, buildPlot(spec, plotFolder))
+	end
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "Spawn"
+	spawn.Size = Vector3.new(Config.Map.Dimensions.spawnSize, 1, Config.Map.Dimensions.spawnSize)
+	spawn.CFrame = cframeOf(layout.spawn.position, layout.spawn.rotation)
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Duration = 0
+	spawn.Color = color3(theme.accent)
+	spawn.Material = Enum.Material.Neon
+	spawn.Transparency = 0.5
+	spawn.CanCollide = true
+	-- Yalnızca bölgesindeki oyuncular burada doğsun diye kendiliğinden
+	-- seçilmesini kapatıyoruz; atamayı RespawnLocation ile yapıyoruz.
+	spawn.Enabled = zoneId == "hub"
+	spawn.Parent = folder
+
+	zones[zoneId] = { folder = folder, layout = layout, plots = plots, spawn = spawn }
+end
+
+--═══ Parseller ═════════════════════════════════════════════════════════
+
 local function renderLabels(plot)
 	if not plot.userId then
-		plot.nameLabel.Text = "Boş Kasa"
-		plot.statLabel.Text = "Bir oyuncu bekleniyor"
+		plot.owner.Text = "Boş Kasa"
+		plot.status.Text = "Bir oyuncu bekleniyor"
 		return
 	end
 
@@ -157,12 +275,12 @@ local function renderLabels(plot)
 		return
 	end
 
-	plot.nameLabel.Text = `{player.DisplayName} Kasası`
-	plot.statLabel.Text = `{#profile.placed} hazine · {Format.short(profile.stash)} birikim`
+	plot.owner.Text = player.DisplayName
+	plot.status.Text = `{#profile.placed} hazine · {Format.short(profile.stash)} birikim`
 end
 
--- Kaideler yalnızca kasa içeriği değiştiğinde yeniden kuruluyor: her 5
--- saniyede yüzlerce parçayı silip yeniden yaratmak hem pahalı hem titrek.
+-- Kaideler yalnızca kasa içeriği değiştiğinde kuruluyor: her saniye
+-- yüzlerce parçayı silip yaratmak hem pahalı hem titrek.
 local function renderPedestals(plot)
 	plot.pedestals:ClearAllChildren()
 	if not plot.userId then
@@ -175,6 +293,7 @@ local function renderPedestals(plot)
 		return
 	end
 
+	local base = plot.anchor.CFrame
 	for index, uid in profile.placed do
 		local treasure = profile.treasures[uid]
 		if not treasure then
@@ -185,79 +304,138 @@ local function renderPedestals(plot)
 
 		local row = math.floor((index - 1) / PEDESTALS_PER_ROW)
 		local column = (index - 1) % PEDESTALS_PER_ROW
-		local offsetX = (column - (PEDESTALS_PER_ROW - 1) / 2) * 2.6
-		local offsetZ = 2 - row * 4.5
+		local offsetX = (column - (PEDESTALS_PER_ROW - 1) / 2) * 3.2
+		local offsetZ = 4 - row * 4.2
 
-		local stand = newPart("Kaide", Vector3.new(1.8, 2, 1.8), Color3.fromRGB(44, 46, 58), plot.pedestals)
-		stand.CFrame = plot.platform.CFrame * CFrame.new(offsetX, 1.5, offsetZ)
+		local stand = Instance.new("Part")
+		stand.Name = "Kaide"
+		stand.Size = Vector3.new(2, 2.4, 2)
+		stand.CFrame = base * CFrame.new(offsetX, 1.2, offsetZ)
+		stand.Color = Color3.fromRGB(44, 46, 58)
+		stand.Material = Enum.Material.Metal
+		stand.Anchored = true
+		stand.CanCollide = false
+		stand.CanTouch = false
+		stand.Parent = plot.pedestals
 
-		local gem = newPart("Hazine", Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(table.unpack(mutation.color)), plot.pedestals)
+		local gem = Instance.new("Part")
+		gem.Name = "Hazine"
+		gem.Size = Vector3.new(1.4, 1.4, 1.4)
+		gem.CFrame = stand.CFrame * CFrame.new(0, 2, 0) * CFrame.Angles(math.rad(35), math.rad(35), 0)
+		gem.Color = color3(mutation.color)
 		gem.Material = Enum.Material.Neon
-		gem.CFrame = stand.CFrame * CFrame.new(0, 1.8, 0) * CFrame.Angles(math.rad(35), math.rad(35), 0)
+		gem.Anchored = true
 		gem.CanCollide = false
+		gem.CanTouch = false
+		gem.Parent = plot.pedestals
 
-		local gemLabel = label(gem, Loot.displayName(treasure), Vector2.new(4.5, 1.1), 1.6)
-		gemLabel.TextColor3 = Color3.fromRGB(table.unpack(rarity.color))
+		local label = billboard(gem, Loot.displayName(treasure), 5, 1.2, 1.7)
+		label.TextColor3 = color3(rarity.color)
 	end
-end
-
-local function renderPlot(plot)
-	renderLabels(plot)
-	renderPedestals(plot)
-end
-
-local function assignPlot(player: Player)
-	for index, plot in plots do
-		if not plot.userId then -- ilk boş parsel
-			plot.userId = player.UserId
-			byUser[player.UserId] = index
-			renderPlot(plot)
-
-			-- Oyuncuyu kendi kasasının önüne ışınla ki ilk gördüğü şey kasası olsun.
-			task.defer(function()
-				local character = player.Character or player.CharacterAdded:Wait()
-				task.wait(0.2)
-				if character and character.PrimaryPart then
-					character:PivotTo(plot.platform.CFrame * CFrame.new(0, 4, 6))
-				end
-			end)
-			return
-		end
-	end
-	warn(`[WorldService] boş parsel kalmadı ({PLOT_COUNT} parsel); {player.Name} kasasız oynuyor`)
 end
 
 local function releasePlot(userId: number)
-	local index = byUser[userId]
-	if not index then
+	local assignment = assignments[userId]
+	if not assignment then
 		return
 	end
-	byUser[userId] = nil
-	local plot = plots[index]
+	assignments[userId] = nil
+
+	local zone = zones[assignment.zoneId]
+	local plot = zone and zone.plots[assignment.index]
 	if plot then
 		plot.userId = nil
-		renderPlot(plot)
+		renderLabels(plot)
+		renderPedestals(plot)
 	end
+end
+
+local function assignPlot(player: Player, zoneId: string): boolean
+	releasePlot(player.UserId)
+
+	local zone = zones[zoneId]
+	if not zone then
+		return false
+	end
+
+	for index, plot in zone.plots do
+		if not plot.userId then
+			plot.userId = player.UserId
+			assignments[player.UserId] = { zoneId = zoneId, index = index }
+			renderLabels(plot)
+			renderPedestals(plot)
+			return true
+		end
+	end
+
+	warn(`[WorldService] {zoneId} bölgesinde boş parsel yok; {player.Name} kasasız`)
+	return false
 end
 
 function WorldService.plotOf(userId: number)
-	local index = byUser[userId]
-	return if index then plots[index] else nil
+	local assignment = assignments[userId]
+	if not assignment then
+		return nil
+	end
+	local zone = zones[assignment.zoneId]
+	return zone and zone.plots[assignment.index]
+end
+
+--═══ Bölge değişimi ════════════════════════════════════════════════════
+
+function WorldService.spawnCFrame(zoneId: string): CFrame?
+	local zone = zones[zoneId]
+	if not zone then
+		return nil
+	end
+	return zone.spawn.CFrame * CFrame.new(0, 4, 0)
+end
+
+-- Oyuncuyu bölgesine yerleştirir: parsel ataması, doğma noktası ve
+-- karakterin ışınlanması. Travel bunu çağırmadığı için bölgeler oyunda
+-- fiilen erişilemiyordu.
+function WorldService.placeInZone(player: Player, zoneId: string, teleport: boolean)
+	local zone = zones[zoneId]
+	if not zone then
+		return
+	end
+
+	assignPlot(player, zoneId)
+	player.RespawnLocation = zone.spawn
+
+	if not teleport then
+		return
+	end
+	local character = player.Character
+	if character and character.PrimaryPart then
+		character:PivotTo(WorldService.spawnCFrame(zoneId))
+	end
 end
 
 function WorldService.init()
-	buildHub()
-
-	local plotFolder = Instance.new("Folder")
-	plotFolder.Name = "Kasalar"
-	plotFolder.Parent = Workspace
-
-	for index = 1, PLOT_COUNT do
-		plots[index] = buildPlot(index, plotFolder)
-		renderPlot(plots[index])
+	local world = Workspace:FindFirstChild("Dunya")
+	if world then
+		world:Destroy()
 	end
+	world = Instance.new("Folder")
+	world.Name = "Dunya"
+	world.Parent = Workspace
 
-	DataService.Loaded:connect(assignPlot)
+	local total = 0
+	for _, mapZone in Config.Map.Zones do
+		buildZone(mapZone.id, world)
+		total += #zones[mapZone.id].layout.parts
+	end
+	print(`[WorldService] {#Config.Map.Zones} bölge kuruldu, {total} parça`)
+
+	DataService.Loaded:connect(function(player, profile)
+		-- Kilidi açık olmayan bir bölgede kayıtlıysa hub'a çek.
+		if not Config.Zones.isUnlocked(profile.zone, profile.rebirths) then
+			profile.zone = "hub"
+		end
+		WorldService.placeInZone(player, profile.zone, true)
+	end)
+
 	Players.PlayerRemoving:Connect(function(player)
 		releasePlot(player.UserId)
 	end)
@@ -265,7 +443,8 @@ function WorldService.init()
 	VaultService.Changed:connect(function(userId)
 		local plot = WorldService.plotOf(userId)
 		if plot then
-			renderPlot(plot)
+			renderLabels(plot)
+			renderPedestals(plot)
 		end
 	end)
 
@@ -273,9 +452,11 @@ function WorldService.init()
 	task.spawn(function()
 		while true do
 			task.wait(5)
-			for _, plot in plots do
-				if plot.userId then
-					renderLabels(plot)
+			for _, zone in zones do
+				for _, plot in zone.plots do
+					if plot.userId then
+						renderLabels(plot)
+					end
 				end
 			end
 		end

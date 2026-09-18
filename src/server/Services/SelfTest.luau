@@ -35,10 +35,24 @@ local function collect(): { Check }
 	)
 
 	-- Dünya
-	add("Hub kuruldu", Workspace:FindFirstChild("Hub") ~= nil)
-	add("Kasa parselleri kuruldu", Workspace:FindFirstChild("Kasalar") ~= nil)
-	local spawn = Workspace:FindFirstChild("Hub") and Workspace.Hub:FindFirstChild("Spawn")
-	add("Doğma noktası var", spawn ~= nil)
+	local world = Workspace:FindFirstChild("Dunya")
+	add("Dünya klasörü kuruldu", world ~= nil)
+	if world then
+		local built, missing = 0, {}
+		for _, mapZone in Config.Map.Zones do
+			local zone = world:FindFirstChild(mapZone.id)
+			if zone and zone:FindFirstChild("Kasalar") and zone:FindFirstChild("Spawn") then
+				built += 1
+			else
+				table.insert(missing, mapZone.id)
+			end
+		end
+		add(
+			"Bütün bölgeler kuruldu",
+			built == #Config.Map.Zones,
+			if #missing > 0 then `eksik: {table.concat(missing, ", ")}` else `{built} bölge`
+		)
+	end
 
 	-- Kayıt
 	local storeOk, storeError = pcall(function()

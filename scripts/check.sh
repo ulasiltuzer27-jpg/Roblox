@@ -29,6 +29,15 @@ if [ "$failed" -gt 0 ]; then
 fi
 echo "$count dosyanın tamamı derlendi"
 
+# Roblox API kullanımı ve referanslar: Studio olmadan yakalanabilen
+# hata sınıfları (olmayan özellik, yanlış Enum, kırık require yolu).
+python3 "$ROOT/scripts/check_api.py" || failed=$((failed + 1))
+python3 "$ROOT/scripts/check_refs.py" || failed=$((failed + 1))
+
+if [ "$failed" -gt 0 ]; then
+	exit 1
+fi
+
 # Depodaki yer dosyası bir derleme çıktısı: kaynak değişip o yenilenmezse
 # sessizce eskir ve Studio'da eski kodu açarsın. Uyar, ama hata verme.
 PLACE="$ROOT/VaultHeist.rbxl"

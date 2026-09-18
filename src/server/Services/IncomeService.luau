@@ -10,6 +10,7 @@ local Economy = require(ReplicatedStorage.Shared.Core.Economy)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Contexts = require(ServerScriptService.Server.Services.Contexts)
 local DataService = require(ServerScriptService.Server.Services.DataService)
+local MonetizationService = require(ServerScriptService.Server.Services.MonetizationService)
 local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local SyncService = require(ServerScriptService.Server.Services.SyncService)
 
@@ -39,6 +40,13 @@ local function applyOfflineEarnings(player: Player, profile)
 		return
 	end
 
+	-- Gamepass sahipliği yüklenmeden hesaplarsak "2x Gelir" ve "Otomatik
+	-- Toplama" sahipleri eksik çevrimdışı kazanç alıyor.
+	MonetizationService.waitForPasses(player)
+	if not player.Parent then
+		return
+	end
+
 	local rate = Contexts.incomePerSecond(player, profile)
 	local earned = Economy.offlineEarnings(rate, elapsed, Contexts.hasPass(player, "auto_collect"))
 	profile.lastIncomeAt = os.time()
@@ -48,6 +56,7 @@ local function applyOfflineEarnings(player: Player, profile)
 
 	local cap = Economy.stashCap(rate)
 	profile.stash = math.min(profile.stash + earned, math.max(cap, profile.stash))
+	SyncService.markMoney(player)
 	NotificationService.toast(
 		player,
 		`Yokluğunda kasan {Format.short(earned)} coin üretti. Toplamayı unutma!`,

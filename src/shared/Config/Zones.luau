@@ -10,7 +10,7 @@ export type Zone = {
 	name: string,
 	requiredRebirths: number,
 	incomeBonus: number, -- bölgeye kasa taşıyan oyuncuya kalıcı gelir bonusu
-	origin: { number }, -- ileride bölgeler ayrı fiziksel alan olursa diye ayrıldı; şu an kullanılmıyor
+	origin: { number }, -- bölgenin dünya merkezi; Core/MapLayout haritayı buradan kurar
 }
 
 local Zones = {}

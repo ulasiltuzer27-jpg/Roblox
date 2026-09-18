@@ -27,6 +27,20 @@ local function refreshPasses(player: Player)
 		end)
 		runtime.gamepasses[pass.id] = ok and owns or false
 	end
+	runtime.gamepassesReady = true
+end
+
+-- Gelir hesabı gamepass sahipliğini bekliyor (kısa, tavanlı bir bekleme).
+function MonetizationService.waitForPasses(player: Player, timeout: number?): boolean
+	local runtime = DataService.runtime(player)
+	local deadline = os.clock() + (timeout or 5)
+	while not runtime.gamepassesReady and os.clock() < deadline do
+		task.wait(0.1)
+		if not player.Parent then
+			return false
+		end
+	end
+	return runtime.gamepassesReady == true
 end
 
 function MonetizationService.hasPass(player: Player, passId: string): boolean

@@ -155,6 +155,9 @@ function DataService.runtime(player: Player)
 	if not runtime then
 		runtime = {
 			gamepasses = {},
+			-- Gamepass sorgusu ağ üzerinden geliyor; hazır olmadan gelir
+			-- hesaplamak "2x Gelir" sahibine eksik çevrimdışı kazanç yazıyordu.
+			gamepassesReady = false,
 			lastHeistAt = 0,
 			targetHistory = {},
 			actionBudget = {},

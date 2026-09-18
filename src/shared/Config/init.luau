@@ -12,6 +12,7 @@ local Config = {
 	Crates = require(ConfigFolder.Crates),
 	DailyRewards = require(ConfigFolder.DailyRewards),
 	Defenses = require(ConfigFolder.Defenses),
+	Map = require(ConfigFolder.Map),
 	Monetization = require(ConfigFolder.Monetization),
 	Mutations = require(ConfigFolder.Mutations),
 	Rarities = require(ConfigFolder.Rarities),

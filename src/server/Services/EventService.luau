@@ -49,6 +49,7 @@ function EventService.pushTo(player: Player)
 end
 
 function EventService.init()
+	local ticks = 0
 	task.spawn(function()
 		while true do
 			local state = EventService.state()
@@ -71,7 +72,12 @@ function EventService.init()
 				lastEventId = state.event.id
 			end
 
-			broadcast(state)
+			-- Her saniye herkese paket atmak gereksiz: istemci kalan süreyi
+			-- kendisi sayıyor. Faz değişiminde ve beş saniyede bir yayınla.
+			ticks += 1
+			if changed or ticks % 5 == 0 then
+				broadcast(state)
+			end
 			task.wait(1)
 		end
 	end)
