@@ -1,0 +1,23 @@
+# Rojo / build çıktıları
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+build/
+out/
+
+# Araç zincirleri
+.rokit/
+.aftman/
+~/.luau
+
+# Editör
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Geçici
+tmp/
+*.log
