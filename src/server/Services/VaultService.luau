@@ -11,6 +11,8 @@ local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Heist = require(ReplicatedStorage.Shared.Core.Heist)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local Signal = require(ReplicatedStorage.Shared.Core.Signal)
+local Bots = require(ReplicatedStorage.Shared.Core.Bots)
+local BotVaultService = require(ServerScriptService.Server.Services.BotVaultService)
 local Contexts = require(ServerScriptService.Server.Services.Contexts)
 local DataService = require(ServerScriptService.Server.Services.DataService)
 local NetService = require(ServerScriptService.Server.Services.NetService)
@@ -71,7 +73,9 @@ function VaultService.list(requester: Player)
 	}
 
 	local results = {}
-	local function consider(userId: number, name: string, targetProfile, online: boolean, vipLock: boolean)
+	local robbableCount = 0
+
+	local function consider(userId: number, name: string, targetProfile, online: boolean, vipLock: boolean, isBot: boolean?)
 		if userId == requester.UserId then
 			return
 		end
@@ -88,6 +92,10 @@ function VaultService.list(requester: Player)
 		summary.canRob = canRob
 		summary.reason = reason
 		summary.reasonText = Heist.ReasonText[reason]
+		summary.bot = isBot == true
+		if canRob and not summary.bot then
+			robbableCount += 1
+		end
 		table.insert(results, summary)
 	end
 
@@ -101,6 +109,12 @@ function VaultService.list(requester: Player)
 		else
 			lingering[userId] = nil
 		end
+	end
+
+	-- Gerçek hedef azsa NPC kasalarıyla tamamla: soygun döngüsü tek başına
+	-- oynayan biri için de çalışsın.
+	for _, entry in BotVaultService.supplement(requester, robbableCount) do
+		consider(entry.userId, entry.name, entry.profile, false, false, true)
 	end
 
 	-- Soyulabilirler önce, sonra birikimi büyük olanlar.
@@ -118,6 +132,10 @@ function VaultService.list(requester: Player)
 end
 
 function VaultService.findTarget(userId: number)
+	if Bots.isBot(userId) then
+		return BotVaultService.find(userId)
+	end
+
 	local player = Players:GetPlayerByUserId(userId)
 	if player then
 		local profile = DataService.get(player)
@@ -229,6 +247,11 @@ end
 -- Soygun sonucunu hedefe işler. Hedef çevrimdışıysa kayıt üzerinden gider.
 -- Dönen değer: çalınan coin ve (varsa) çalınan hazine.
 function VaultService.applySteal(targetUserId: number, share: number, takeTreasure: boolean)
+	if Bots.isBot(targetUserId) then
+		-- NPC kasasında hazine yok, kayıt da yok.
+		return BotVaultService.applySteal(targetUserId, share), nil
+	end
+
 	local stolenCoins = 0
 	local stolenTreasure = nil
 
@@ -301,7 +324,7 @@ end
 
 -- Yakalanan hırsızın bıraktığı tazminat kasa sahibine yazılır.
 function VaultService.grantBounty(targetUserId: number, amount: number)
-	if amount <= 0 then
+	if amount <= 0 or Bots.isBot(targetUserId) then
 		return
 	end
 	local player = Players:GetPlayerByUserId(targetUserId)

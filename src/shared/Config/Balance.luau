@@ -100,6 +100,31 @@ Balance.Economy = {
 	sellRefundShare = 1, -- hazine satarken alınan oran (1 = tam değer)
 }
 
+Balance.Bots = {
+	-- Boş sunucuda soygun döngüsü çalışmazsa oyun yarım kalıyor. Yeterli
+	-- gerçek hedef yoksa listeye açıkça "NPC" etiketli kasalar ekleniyor.
+	enabled = true,
+	minRobbableTargets = 3,
+	count = 4,
+	refreshSeconds = 240,
+	-- NPC kasasındaki birikim, hırsızın kendi gelirine göre ölçekleniyor ki
+	-- ödül ne anlamsız kalsın ne de ekonomiyi patlatsın.
+	stashSeconds = 420,
+	minStash = 2500,
+	maxStashMultiplier = 3,
+	baseDefenseLevel = 1,
+	defenseLevelPerRebirth = 1,
+	maxDefenseLevel = 6,
+	names = {
+		"Terk Edilmiş Kasa",
+		"Şehir Bankası Deposu",
+		"Neon Antrepo",
+		"Glitch Sunucu Odası",
+		"Eski Maden Kasası",
+		"Liman Ambarı",
+	},
+}
+
 Balance.Net = {
 	-- İstemciden gelen istekler için jeton kovası. Aşan istek sessizce düşer.
 	actionsPerSecond = 8,

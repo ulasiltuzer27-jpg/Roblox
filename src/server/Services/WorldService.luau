@@ -7,7 +7,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
-local Economy = require(ReplicatedStorage.Shared.Core.Economy)
 local Format = require(ReplicatedStorage.Shared.Core.Format)
 local Loot = require(ReplicatedStorage.Shared.Core.Loot)
 local DataService = require(ServerScriptService.Server.Services.DataService)
@@ -143,9 +142,7 @@ local function buildPlot(index: number, parent: Instance)
 	}
 end
 
-local function renderPlot(plot)
-	plot.pedestals:ClearAllChildren()
-
+local function renderLabels(plot)
 	if not plot.userId then
 		plot.nameLabel.Text = "Boş Kasa"
 		plot.statLabel.Text = "Bir oyuncu bekleniyor"
@@ -159,14 +156,22 @@ local function renderPlot(plot)
 	end
 
 	plot.nameLabel.Text = `{player.DisplayName} Kasası`
-	local income = Economy.incomePerSecond(
-		{},
-		{ upgrades = profile.upgrades, rebirths = profile.rebirths, zone = profile.zone, doubleIncome = false, eventMultiplier = 1 }
-	)
-	local _ = income
+	plot.statLabel.Text = `{#profile.placed} hazine · {Format.short(profile.stash)} birikim`
+end
 
-	local placedCount = #profile.placed
-	plot.statLabel.Text = `{placedCount} hazine · {Format.short(profile.stash)} birikim`
+-- Kaideler yalnızca kasa içeriği değiştiğinde yeniden kuruluyor: her 5
+-- saniyede yüzlerce parçayı silip yeniden yaratmak hem pahalı hem titrek.
+local function renderPedestals(plot)
+	plot.pedestals:ClearAllChildren()
+	if not plot.userId then
+		return
+	end
+
+	local player = Players:GetPlayerByUserId(plot.userId)
+	local profile = if player then DataService.get(player) else nil
+	if not profile then
+		return
+	end
 
 	for index, uid in profile.placed do
 		local treasure = profile.treasures[uid]
@@ -192,6 +197,11 @@ local function renderPlot(plot)
 		local gemLabel = label(gem, Loot.displayName(treasure), Vector2.new(4.5, 1.1), 1.6)
 		gemLabel.TextColor3 = Color3.fromRGB(table.unpack(rarity.color))
 	end
+end
+
+local function renderPlot(plot)
+	renderLabels(plot)
+	renderPedestals(plot)
 end
 
 local function assignPlot(player: Player)
@@ -256,13 +266,13 @@ function WorldService.init()
 		end
 	end)
 
-	-- Birikim etiketleri canlı kalsın.
+	-- Birikim etiketleri canlı kalsın (kaideler dokunulmadan).
 	task.spawn(function()
 		while true do
 			task.wait(5)
 			for _, plot in plots do
 				if plot.userId then
-					renderPlot(plot)
+					renderLabels(plot)
 				end
 			end
 		end

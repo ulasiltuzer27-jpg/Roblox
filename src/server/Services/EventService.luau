@@ -26,27 +26,26 @@ function EventService.state()
 	return EventClock.state(os.time())
 end
 
-local function broadcast(state)
-	NetService.pushAll("EventState", {
+local function payloadFor(state)
+	return {
 		id = state.event.id,
 		name = state.event.name,
 		tagline = state.event.tagline,
 		color = state.event.color,
 		phase = state.phase,
 		secondsLeft = math.floor(state.secondsLeft),
-	})
+		-- İstemci indirimli fiyatı ve çarpanları gösterebilsin diye
+		-- yürürlükteki etkiler de gidiyor.
+		effects = currentEffects,
+	}
+end
+
+local function broadcast(state)
+	NetService.pushAll("EventState", payloadFor(state))
 end
 
 function EventService.pushTo(player: Player)
-	local state = EventService.state()
-	NetService.push(player, "EventState", {
-		id = state.event.id,
-		name = state.event.name,
-		tagline = state.event.tagline,
-		color = state.event.color,
-		phase = state.phase,
-		secondsLeft = math.floor(state.secondsLeft),
-	})
+	NetService.push(player, "EventState", payloadFor(EventService.state()))
 end
 
 function EventService.init()

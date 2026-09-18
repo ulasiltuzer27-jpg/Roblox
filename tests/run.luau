@@ -11,6 +11,7 @@ require("./specs/Loot.spec")
 require("./specs/Economy.spec")
 require("./specs/Heist.spec")
 require("./specs/Layout.spec")
+require("./specs/Bots.spec")
 require("./specs/EventClock.spec")
 require("./specs/Config.spec")
 

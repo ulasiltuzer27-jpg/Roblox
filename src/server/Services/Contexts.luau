@@ -4,7 +4,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Config = require(ReplicatedStorage.Shared.Config)
 local Economy = require(ReplicatedStorage.Shared.Core.Economy)
 local DataService = require(ServerScriptService.Server.Services.DataService)
 local EventService = require(ServerScriptService.Server.Services.EventService)

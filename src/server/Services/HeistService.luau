@@ -518,9 +518,19 @@ function HeistService.init()
 		end
 	end)
 
+	-- Sabit adım: her karede değil saniyede 20 kez. Algılama için fazlasıyla
+	-- yeterli, 12 eşzamanlı koridorun parça hareketini de ucuzlatıyor.
+	local accumulator = 0
 	RunService.Heartbeat:Connect(function(deltaTime)
+		accumulator += deltaTime
+		if accumulator < STEP_INTERVAL then
+			return
+		end
+		local elapsed = accumulator
+		accumulator = 0
+
 		for _, session in sessions do
-			local ok, err = pcall(step, session, deltaTime)
+			local ok, err = pcall(step, session, elapsed)
 			if not ok then
 				warn("[HeistService] adım hatası:", err)
 				finish(session, false, "error")

@@ -1,7 +1,6 @@
 --!nonstrict
 -- İlk 60 saniye. Oyuncu ne yapacağını okumadan anlamalı ve ilk ödülünü
 -- hemen almalı; adımlar gerçek oynanış olaylarıyla ilerliyor.
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local DataService = require(ServerScriptService.Server.Services.DataService)

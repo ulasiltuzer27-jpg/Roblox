@@ -2,8 +2,6 @@
 -- Bildirimler ve duyurular. Paylaşılabilir anlar ("Prizma çıktı!",
 -- "Kasan soyuluyor!") oyunun pazarlaması olduğu için tek yerden yönetiliyor.
 local MessagingService = game:GetService("MessagingService")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local NetService = require(ServerScriptService.Server.Services.NetService)
