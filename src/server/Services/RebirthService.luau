@@ -11,6 +11,7 @@ local DataService = require(ServerScriptService.Server.Services.DataService)
 local NotificationService = require(ServerScriptService.Server.Services.NotificationService)
 local SyncService = require(ServerScriptService.Server.Services.SyncService)
 local VaultService = require(ServerScriptService.Server.Services.VaultService)
+local HeistService = require(ServerScriptService.Server.Services.HeistService)
 local WorldService = require(ServerScriptService.Server.Services.WorldService)
 
 local RebirthService = {}
@@ -71,6 +72,10 @@ function RebirthService.travel(player: Player, payload: any): (boolean, any)
 
 	if profile.zone == zoneId then
 		return false, "Zaten bu bölgedesin."
+	end
+	-- Soygun sırasında ışınlanmak koridoru bırakıp oturumu bozuyor.
+	if HeistService.isInHeist(player) then
+		return false, "Önce soygunu bitir."
 	end
 
 	profile.zone = zoneId

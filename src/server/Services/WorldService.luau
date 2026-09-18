@@ -394,22 +394,40 @@ end
 -- Oyuncuyu bölgesine yerleştirir: parsel ataması, doğma noktası ve
 -- karakterin ışınlanması. Travel bunu çağırmadığı için bölgeler oyunda
 -- fiilen erişilemiyordu.
-function WorldService.placeInZone(player: Player, zoneId: string, teleport: boolean)
+function WorldService.placeInZone(player: Player, zoneId: string, teleport: boolean): boolean
 	local zone = zones[zoneId]
 	if not zone then
-		return
+		return false
 	end
 
-	assignPlot(player, zoneId)
+	local gotPlot = assignPlot(player, zoneId)
+	-- RespawnLocation ipucu olarak duruyor ama ona güvenmiyoruz: devre dışı
+	-- bir SpawnLocation'ın kabul edilip edilmediği belirsiz. Doğma sonrası
+	-- yerleştirmeyi CharacterAdded'da kendimiz yapıyoruz.
 	player.RespawnLocation = zone.spawn
 
-	if not teleport then
-		return
+	if teleport then
+		local character = player.Character
+		if character and character.PrimaryPart then
+			character:PivotTo(WorldService.spawnCFrame(zoneId))
+		end
 	end
-	local character = player.Character
-	if character and character.PrimaryPart then
-		character:PivotTo(WorldService.spawnCFrame(zoneId))
+
+	if not gotPlot then
+		NotificationService.toast(
+			player,
+			`{Config.Zones.get(zoneId).name} bölgesinde boş kasa yeri kalmamış; kasan görünmeyecek.`,
+			"warn"
+		)
 	end
+	return gotPlot
+end
+
+-- Oyuncunun o an hangi bölgede olduğunu profilden okur.
+local function zoneOf(player: Player): string
+	local profile = DataService.get(player)
+	local zoneId = profile and profile.zone or "hub"
+	return if zones[zoneId] then zoneId else "hub"
 end
 
 function WorldService.init()
@@ -434,6 +452,35 @@ function WorldService.init()
 			profile.zone = "hub"
 		end
 		WorldService.placeInZone(player, profile.zone, true)
+	end)
+
+	-- Her doğuşta oyuncuyu kendi bölgesine koy. Roblox'un doğma noktası
+	-- seçimi birden fazla SpawnLocation varken güvenilmez; soygundan
+	-- ölerek çıkan oyuncu da böylece doğru yere dönüyor.
+	local function onCharacter(player: Player, character: Model)
+		task.defer(function()
+			if not player.Parent or not character.Parent then
+				return
+			end
+			local target = WorldService.spawnCFrame(zoneOf(player))
+			if target and character.PrimaryPart then
+				character:PivotTo(target)
+			end
+		end)
+	end
+
+	for _, player in Players:GetPlayers() do
+		if player.Character then
+			onCharacter(player, player.Character)
+		end
+		player.CharacterAdded:Connect(function(character)
+			onCharacter(player, character)
+		end)
+	end
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterAdded:Connect(function(character)
+			onCharacter(player, character)
+		end)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
