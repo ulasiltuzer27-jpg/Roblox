@@ -121,18 +121,20 @@ function ShopPanel.mount(parent: Instance)
 		ZIndex = 6,
 	})
 
+	local productRows = {}
 	for index, product in Config.Monetization.Products do
 		local row = Widgets.row(panel.content, product.name, product.description, "Satın Al", function()
 			if product.assetId == 0 then
 				return
 			end
+			-- Tek seferlik ürün alınmışsa pencereyi hiç açma.
+			if product.oneTime and State.profile and State.profile.purchases[product.id] then
+				return
+			end
 			MarketplaceService:PromptProductPurchase(player, product.assetId)
 		end)
 		row.root.LayoutOrder = 100 + index
-		if product.assetId == 0 then
-			row.button.Text = "Yakında"
-			row.button.BackgroundColor3 = Theme.color.panel
-		end
+		table.insert(productRows, { product = product, row = row })
 	end
 
 	local function refresh()
@@ -140,6 +142,20 @@ function ShopPanel.mount(parent: Instance)
 		if not profile then
 			return
 		end
+		for _, entry in productRows do
+			local product = entry.product
+			if product.oneTime and profile.purchases and profile.purchases[product.id] then
+				entry.row.button.Text = "ALINDI"
+				entry.row.button.BackgroundColor3 = Theme.color.good
+			elseif product.assetId == 0 then
+				entry.row.button.Text = "Yakında"
+				entry.row.button.BackgroundColor3 = Theme.color.panel
+			else
+				entry.row.button.Text = "Satın Al"
+				entry.row.button.BackgroundColor3 = Theme.color.accent
+			end
+		end
+
 		for _, entry in passRows do
 			local owned = profile.gamepasses and profile.gamepasses[entry.pass.id]
 			if owned then

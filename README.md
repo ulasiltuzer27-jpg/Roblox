@@ -84,3 +84,7 @@ Tam liste: [docs/YAYIN.md](docs/YAYIN.md)
 - [docs/EKONOMI.md](docs/EKONOMI.md) — ekonomi, ilerleme eğrisi, denge ayarı
 - [docs/MIMARI.md](docs/MIMARI.md) — kod mimarisi, veri akışı, güvenlik modeli
 - [docs/YAYIN.md](docs/YAYIN.md) — yayın kontrol listesi ve 1000 oyuncu meselesi
+- [docs/STUDIO_TEST.md](docs/STUDIO_TEST.md) — Studio'da elle test listesi
+- [docs/PAZARLAMA.md](docs/PAZARLAMA.md) — ikon/thumbnail brief'i, açıklama, video metinleri, creator mesajı
+- [tools/studio/](tools/studio/) — Marketplace model denetimi ve harita kurucu
+- [tools/blender/](tools/blender/) — low-poly model üretimi

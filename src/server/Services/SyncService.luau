@@ -67,6 +67,8 @@ function SyncService.snapshot(player: Player)
 
 		boosts = boosts,
 		gamepasses = DataService.runtime(player).gamepasses,
+		-- Tek seferlik ürünler mağazada "Alındı" görünsün.
+		purchases = profile.purchases,
 		daily = profile.daily,
 		tutorial = profile.tutorial,
 		stats = profile.stats,
