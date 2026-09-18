@@ -44,6 +44,7 @@ function App.mount()
 	local overlay = HeistOverlay.mount(screen, {
 		abort = HeistController.abort,
 		door = HeistController.doorAttempt,
+		setMode = HeistController.setMode,
 	})
 	HeistController.init(overlay)
 

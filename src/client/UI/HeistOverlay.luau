@@ -113,6 +113,47 @@ function HeistOverlay.mount(parent: Instance, callbacks: { abort: () -> (), door
 		ZIndex = 12,
 	}, callbacks.abort)
 
+	-- Hareket modu düğmeleri. Dokunmatikte tek kontrol yolu bu; masaüstünde
+	-- Ctrl/Shift ile aynı işi yapıyor ve seçili modu gösteriyor.
+	local modeButtons = {}
+	local MODES = {
+		{ id = "sneak", text = "Sinsi", color = Theme.color.good },
+		{ id = "walk", text = "Normal", color = Theme.color.panelAlt },
+		{ id = "sprint", text = "Koşu", color = Theme.color.warn },
+	}
+
+	local modeBar = Widgets.frame({
+		Size = UDim2.fromOffset(300, 40),
+		Position = UDim2.new(0.5, 0, 1, -124),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+		Parent = root,
+		ZIndex = 11,
+	})
+	local modeLayout = Widgets.list(Enum.FillDirection.Horizontal, 8)
+	modeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	modeLayout.Parent = modeBar
+
+	for index, mode in MODES do
+		local button = Widgets.button({
+			Text = mode.text,
+			Size = UDim2.fromOffset(92, 38),
+			LayoutOrder = index,
+			BackgroundColor3 = Theme.color.panelAlt,
+			Parent = modeBar,
+			ZIndex = 12,
+		}, function()
+			callbacks.setMode(mode.id)
+		end)
+		modeButtons[mode.id] = { button = button, color = mode.color }
+	end
+
+	local function highlightMode(active: string)
+		for id, entry in modeButtons do
+			entry.button.BackgroundColor3 = if id == active then entry.color else Theme.color.panelAlt
+		end
+	end
+
 	-- Kapı kilidi mini oyunu
 	local door = Widgets.frame({
 		Size = UDim2.fromOffset(420, 110),
@@ -229,6 +270,7 @@ function HeistOverlay.mount(parent: Instance, callbacks: { abort: () -> (), door
 
 	function overlay.start(payload)
 		root.Visible = true
+		highlightMode("walk")
 		result.Visible = false
 		state.atDoor = false
 		door.Visible = false
@@ -246,7 +288,8 @@ function HeistOverlay.mount(parent: Instance, callbacks: { abort: () -> (), door
 		alarmText.TextColor3 = if payload.alarm > 70 then Theme.color.bad else Theme.color.textDim
 
 		local modeText = ({ sneak = "Sinsi (yavaş, sessiz)", walk = "Normal", sprint = "Koşu (gürültülü)" })[payload.mode]
-		modeLabel.Text = `{modeText}  ·  Ctrl: sinsi, Shift: koşu{if payload.rooted then "  ·  KAPANA SIKIŞTIN" else ""}`
+		modeLabel.Text = `{modeText}{if payload.rooted then "  ·  KAPANA SIKIŞTIN" else ""}`
+		highlightMode(payload.mode)
 
 		state.atDoor = payload.atDoor
 		state.doorStartedAt = payload.doorStartedAt

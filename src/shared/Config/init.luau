@@ -8,6 +8,7 @@ local ConfigFolder = ReplicatedStorage.Shared.Config
 
 local Config = {
 	Balance = require(ConfigFolder.Balance),
+	Codes = require(ConfigFolder.Codes),
 	Crates = require(ConfigFolder.Crates),
 	DailyRewards = require(ConfigFolder.DailyRewards),
 	Defenses = require(ConfigFolder.Defenses),

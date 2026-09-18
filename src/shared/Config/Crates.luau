@@ -1,6 +1,11 @@
 --!strict
 -- Sandıklar. Her sandık bir nadirlik ağırlık tablosu taşır; ağırlıklar
 -- Core/Loot içinde şans çarpanıyla yeniden şekillendirilir.
+--
+-- Fiyatlandırma kuralı: bir sandık, o kademenin beklenen gelirine göre
+-- kabaca 1-30 dakikada kendini ödesin (bkz. ./scripts/balance.sh).
+-- Asıl darboğaz para değil yuva sayısı: üst kademe sandık, dolu bir yuvayı
+-- daha iyisiyle değiştirdiği için değerli.
 export type Crate = {
 	id: string,
 	name: string,
@@ -18,7 +23,7 @@ Crates.List = {
 		id = "wood",
 		name = "Ahşap Sandık",
 		zone = "hub",
-		cost = 150,
+		cost = 250,
 		currency = "coins",
 		openTime = 1.5,
 		weights = { common = 6000, uncommon = 3000, rare = 900, epic = 95, legendary = 5 },
@@ -27,7 +32,7 @@ Crates.List = {
 		id = "iron",
 		name = "Demir Sandık",
 		zone = "hub",
-		cost = 4000,
+		cost = 5000,
 		currency = "coins",
 		openTime = 2,
 		weights = { common = 3000, uncommon = 4200, rare = 2200, epic = 520, legendary = 75, mythic = 5 },
@@ -36,7 +41,7 @@ Crates.List = {
 		id = "neon",
 		name = "Neon Sandık",
 		zone = "neon_city",
-		cost = 120000,
+		cost = 60000,
 		currency = "coins",
 		openTime = 2.5,
 		weights = { uncommon = 2500, rare = 4300, epic = 2400, legendary = 700, mythic = 95, secret = 5 },
@@ -45,7 +50,7 @@ Crates.List = {
 		id = "glitch",
 		name = "Glitch Sandığı",
 		zone = "glitch_sector",
-		cost = 3500000,
+		cost = 750000,
 		currency = "coins",
 		openTime = 3,
 		weights = { rare = 2200, epic = 4300, legendary = 2700, mythic = 740, secret = 60 },
@@ -54,7 +59,7 @@ Crates.List = {
 		id = "void",
 		name = "Boşluk Sandığı",
 		zone = "void_vault",
-		cost = 90000000,
+		cost = 12000000,
 		currency = "coins",
 		openTime = 3.5,
 		weights = { epic = 1800, legendary = 4200, mythic = 3200, secret = 800 },

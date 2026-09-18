@@ -13,7 +13,14 @@ local NetService = require(ServerScriptService.Server.Services.NetService)
 
 local SyncService = {}
 
-local dirty: { [number]: boolean } = {}
+-- İki tür güncelleme var:
+--   tam   -> envanter, yükseltmeler, savunmalar... (nadiren değişir)
+--   hafif -> para ve birikim (saniyede bir değişir)
+-- Birikim tiki yüzünden 120 hazinelik envanteri her saniye göndermek
+-- bant genişliğini boşa yakıyordu; hafif paket sadece sayıları taşıyor.
+local FULL, LIGHT = 2, 1
+
+local pending: { [number]: number } = {}
 
 local function remaining(timestamp: number?): number
 	return math.max(0, (timestamp or 0) - os.time())
@@ -66,20 +73,48 @@ function SyncService.snapshot(player: Player)
 	}
 end
 
+-- Yalnızca para/birikim değişti.
+function SyncService.moneySnapshot(player: Player)
+	local profile = DataService.get(player)
+	if not profile then
+		return nil
+	end
+	local incomePerSecond = Contexts.incomePerSecond(player, profile)
+	return {
+		partial = true,
+		coins = math.floor(profile.coins),
+		tokens = profile.tokens,
+		stash = math.floor(profile.stash),
+		stashCap = math.floor(Economy.stashCap(incomePerSecond)),
+		incomePerSecond = incomePerSecond,
+		netWorth = Economy.netWorth(profile),
+		shieldSecondsLeft = remaining(profile.shieldUntil),
+		jailSecondsLeft = remaining(profile.jailUntil),
+	}
+end
+
 function SyncService.markDirty(player: Player)
-	dirty[player.UserId] = true
+	pending[player.UserId] = FULL
+end
+
+function SyncService.markMoney(player: Player)
+	if (pending[player.UserId] or 0) < LIGHT then
+		pending[player.UserId] = LIGHT
+	end
 end
 
 function SyncService.markAllDirty()
 	for _, player in Players:GetPlayers() do
-		dirty[player.UserId] = true
+		pending[player.UserId] = FULL
 	end
 end
 
-function SyncService.flush(player: Player)
-	local snapshot = SyncService.snapshot(player)
+function SyncService.flush(player: Player, level: number?)
+	local snapshot = if (level or FULL) >= FULL
+		then SyncService.snapshot(player)
+		else SyncService.moneySnapshot(player)
 	if snapshot then
-		dirty[player.UserId] = nil
+		pending[player.UserId] = nil
 		NetService.push(player, "Profile", snapshot)
 	end
 end
@@ -90,18 +125,18 @@ function SyncService.init()
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
-		dirty[player.UserId] = nil
+		pending[player.UserId] = nil
 	end)
 
 	task.spawn(function()
 		while true do
 			task.wait(Config.Balance.Net.syncInterval)
-			for userId in dirty do
+			for userId, level in pending do
 				local player = Players:GetPlayerByUserId(userId)
 				if player then
-					SyncService.flush(player)
+					SyncService.flush(player, level)
 				else
-					dirty[userId] = nil
+					pending[userId] = nil
 				end
 			end
 		end

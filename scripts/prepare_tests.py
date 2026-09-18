@@ -66,6 +66,7 @@ def main() -> int:
 
     modules = copy_tree(ROOT / "src" / "shared", BUILD / "shared")
     specs = copy_tree(ROOT / "tests" / "specs", BUILD / "specs")
+    copy_tree(ROOT / "tools", BUILD / "tools")
 
     for name in ("framework.luau", "run.luau"):
         source = ROOT / "tests" / name

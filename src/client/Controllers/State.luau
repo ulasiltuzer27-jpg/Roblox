@@ -37,8 +37,17 @@ end
 
 function State.init()
 	Net.on("Profile", function(snapshot)
-		State.profile = snapshot
-		State.Changed:fire(snapshot)
+		if snapshot.partial and State.profile then
+			-- Hafif paket yalnızca sayıları taşır; envanteri ezmesin.
+			for key, value in snapshot do
+				if key ~= "partial" then
+					State.profile[key] = value
+				end
+			end
+		else
+			State.profile = snapshot
+		end
+		State.Changed:fire(State.profile)
 	end)
 
 	Net.on("EventState", function(payload)

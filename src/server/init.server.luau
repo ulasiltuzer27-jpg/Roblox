@@ -9,7 +9,9 @@ local Remotes = require(ReplicatedStorage.Shared.Net.Remotes)
 
 local Services = ServerScriptService.Server.Services
 
+local AnalyticsService = require(Services.AnalyticsService)
 local ArenaService = require(Services.ArenaService)
+local CodeService = require(Services.CodeService)
 local CrateService = require(Services.CrateService)
 local DailyRewardService = require(Services.DailyRewardService)
 local DataService = require(Services.DataService)
@@ -84,7 +86,15 @@ local function registerActions()
 	NetService.register(Actions.StartHeist, HeistService.start)
 	NetService.register(Actions.AbortHeist, HeistService.abort)
 	NetService.register(Actions.ClaimDaily, DailyRewardService.claim)
-	NetService.register(Actions.Rebirth, RebirthService.perform)
+	NetService.register(Actions.RedeemCode, CodeService.redeem)
+
+	NetService.register(Actions.Rebirth, function(player, payload)
+		local ok, result = RebirthService.perform(player, payload)
+		if ok then
+			AnalyticsService.logFunnelStep(player, 4, "İlk rebirth")
+		end
+		return ok, result
+	end)
 	NetService.register(Actions.TravelZone, RebirthService.travel)
 
 	NetService.register(Actions.AdvanceTutorial, function(player)
@@ -110,6 +120,7 @@ local function main()
 	HeistService.init()
 	LeaderboardService.init()
 	TutorialService.init()
+	AnalyticsService.init()
 	WorldService.init()
 
 	registerActions()

@@ -42,6 +42,7 @@ function ProfileTemplate.create(now: number)
 		boosts = {},
 		purchases = {},
 		receipts = {}, -- işlenmiş makbuzlar; çifte ödül vermemek için
+		codes = {}, -- kullanılmış tanıtım kodları
 		daily = { day = 0, lastClaimAt = 0 },
 		tutorial = { step = 1, done = false },
 

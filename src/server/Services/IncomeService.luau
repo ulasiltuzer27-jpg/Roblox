@@ -27,7 +27,7 @@ function IncomeService.collect(player: Player): number
 	local amount = math.floor(profile.stash)
 	profile.coins += amount
 	profile.stash -= amount
-	SyncService.markDirty(player)
+	SyncService.markMoney(player)
 	return amount
 end
 
@@ -62,7 +62,7 @@ local function tick(player: Player, profile, deltaTime: number)
 	if profile.pendingTimeSkip and profile.pendingTimeSkip > 0 then
 		profile.coins += rate * profile.pendingTimeSkip
 		profile.pendingTimeSkip = nil
-		SyncService.markDirty(player)
+		SyncService.markMoney(player)
 	end
 
 	if rate <= 0 then
@@ -72,7 +72,7 @@ local function tick(player: Player, profile, deltaTime: number)
 	local cap = Economy.stashCap(rate)
 	if profile.stash < cap then
 		profile.stash = math.min(profile.stash + rate * deltaTime, cap)
-		SyncService.markDirty(player)
+		SyncService.markMoney(player)
 	end
 
 	if Contexts.hasPass(player, "auto_collect") then

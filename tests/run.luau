@@ -14,6 +14,8 @@ require("./specs/Layout.spec")
 require("./specs/Bots.spec")
 require("./specs/EventClock.spec")
 require("./specs/Config.spec")
+require("./specs/Codes.spec")
+require("./specs/Progression.spec")
 
 local failed = Framework.run()
 if failed > 0 then

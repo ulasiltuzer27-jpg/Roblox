@@ -32,6 +32,20 @@ local function syncMode()
 	end
 end
 
+-- Dokunmatik düğmelerden gelen doğrudan mod seçimi. Tuş basılı tutma
+-- mantığını ezer: mobilde "basılı tutma" diye bir şey yok.
+function HeistController.setMode(mode: string)
+	if mode ~= "sneak" and mode ~= "walk" and mode ~= "sprint" then
+		return
+	end
+	holding.sneak = mode == "sneak"
+	holding.sprint = mode == "sprint"
+	currentMode = mode
+	if active then
+		Net.send("Move", { mode = mode })
+	end
+end
+
 function HeistController.abort()
 	Net.invoke("AbortHeist")
 end
