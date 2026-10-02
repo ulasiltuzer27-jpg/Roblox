@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CS2 Kasa Açıcı</title>
+  <meta name="description" content="Eğlence amaçlı CS2 kasa açma simülatörü: tüm kasalar, tüm skinler, Item Fight, Upgrader ve Takas Sözleşmesi.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="splash">
+    <div class="sp-box">
+      <div class="sp-logo">CS2 <span>KASA AÇICI</span></div>
+      <div class="sp-bar"><i></i></div>
+      <small>Kasalar yükleniyor...</small>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="tb-inner">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menü">☰</button>
+      <a class="logo" href="#/"><span class="logo-ic">◆</span>CS2 <b>KASA</b></a>
+      <nav class="nav">
+        <a href="#/" data-nav="cases">📦 Kasalar</a>
+        <a href="#/battles" data-nav="battles" class="hot">⚔ Item Fight</a>
+        <a href="#/upgrader" data-nav="upgrader">⬆ Upgrader</a>
+        <a href="#/tradeup" data-nav="tradeup">🔁 Takas</a>
+        <a href="#/inventory" data-nav="inventory">🎒 Envanter <span class="pill" id="invCount">0</span></a>
+        <a href="#/catalog" data-nav="catalog">📖 Katalog</a>
+        <a href="#/stats" data-nav="stats">👤 Profil</a>
+      </nav>
+      <div class="tb-right">
+        <div class="balance" id="balanceChip" title="Bakiye ekle">
+          <span class="bal-ic">$</span><b id="balance">$0.00</b>
+          <button class="bal-add" id="addBalance" aria-label="Bakiye ekle">+</button>
+        </div>
+        <button class="icon-btn" id="soundBtn" aria-label="Ses">🔊</button>
+      </div>
+    </div>
+    <div class="feed"><span class="feed-label"><i></i>CANLI</span><div class="feed-track" id="feedTrack"></div></div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <footer class="foot">
+    <p><b>CS2 Kasa Açıcı</b> — tamamen eğlence amaçlı bir simülatördür. Gerçek para, gerçek eşya veya kumar yoktur. Fiyatlar tahminidir.</p>
+    <p class="muted">Counter-Strike 2 ve tüm eşya görselleri Valve Corporation'a aittir. Bu proje Valve ile bağlantılı değildir. Veri: ByMykel/CSGO-API · <span id="footInfo"></span></p>
+  </footer>
+  <div id="toasts"></div>
+
+  <script src="js/data.js" defer></script>
+  <script src="js/util.js" defer></script>
+  <script src="js/economy.js" defer></script>
+  <script src="js/state.js" defer></script>
+  <script src="js/sound.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/reel.js" defer></script>
+  <script src="js/pages/cases.js" defer></script>
+  <script src="js/pages/opener.js" defer></script>
+  <script src="js/pages/battles.js" defer></script>
+  <script src="js/pages/upgrader.js" defer></script>
+  <script src="js/pages/tradeup.js" defer></script>
+  <script src="js/pages/inventory.js" defer></script>
+  <script src="js/pages/catalog.js" defer></script>
+  <script src="js/pages/stats.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
